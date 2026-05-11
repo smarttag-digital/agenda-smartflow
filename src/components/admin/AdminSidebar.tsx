@@ -51,7 +51,7 @@ export function AdminSidebar({ session, onSignOut }: { session: Session; onSignO
               {ITEMS.map((item) => (
                 <SidebarMenuItem key={item.to}>
                   <SidebarMenuButton asChild isActive={isActive(item.to, item.exact)} tooltip={item.label}>
-                    <Link to={item.to} className="flex items-center gap-2">
+                    <Link to={item.to as any} className="flex items-center gap-2">
                       <item.icon className="h-4 w-4" />
                       <span>{item.label}</span>
                     </Link>

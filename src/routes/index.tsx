@@ -56,7 +56,7 @@ function BookingPage() {
 
   const today = startOfDay(new Date());
   const dateISO = date ? format(date, "yyyy-MM-dd") : "";
-  const todayISO = format(today, "yyyy-MM-dd");
+  const maxDate = new Date(Date.now() + getAvailability().maxAdvanceDays * 86400000);
 
   const availableTimes = useMemo(() => {
     if (!dateISO) return [];
@@ -147,7 +147,7 @@ function BookingPage() {
                 mode="single"
                 selected={date}
                 onSelect={(d) => { setDate(d); setTime(null); }}
-                disabled={(d) => d < today}
+                disabled={(d) => d < today || d > maxDate || !getDayConfig(format(d, "yyyy-MM-dd"))}
                 locale={ptBR}
                 className="pointer-events-auto"
               />

@@ -9,13 +9,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import type { Session } from "@supabase/supabase-js";
 
-const ITEMS = [
+type NavItem = { to: string; label: string; icon: any; exact?: boolean };
+const ITEMS: NavItem[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/admin/agenda", label: "Agenda", icon: CalendarRange },
   { to: "/admin/agendamentos", label: "Agendamentos", icon: ListChecks },
   { to: "/admin/disponibilidade", label: "Disponibilidade", icon: Clock4 },
   { to: "/admin/configuracoes", label: "Configurações", icon: Settings },
-] as const;
+];
 
 export function AdminSidebar({ session, onSignOut }: { session: Session; onSignOut: () => Promise<void> }) {
   const { state } = useSidebar();

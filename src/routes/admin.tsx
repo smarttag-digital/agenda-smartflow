@@ -3,9 +3,10 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   CalendarDays, Clock, TrendingUp, XCircle, Search, MoreVertical,
-  Trash2, CheckCircle2, RotateCcw, UserX, CalendarClock,
+  Trash2, CheckCircle2, RotateCcw, UserX, CalendarClock, LogOut,
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
+import { AdminAuthGate } from "@/components/AdminAuthGate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -19,14 +20,18 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Painel — SmartFlow Agenda" }] }),
-  component: AdminPage,
+  component: () => (
+    <AdminAuthGate>
+      {({ signOut }) => <AdminPage onSignOut={signOut} />}
+    </AdminAuthGate>
+  ),
 });
 
 const STATUS_LIST: AppointmentStatus[] = [
   "Novo", "Confirmado", "Finalizado", "Cancelado", "Reagendado", "Não compareceu",
 ];
 
-function AdminPage() {
+function AdminPage({ onSignOut }: { onSignOut: () => Promise<void> }) {
   const [items, setItems] = useState<Appointment[]>([]);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<AppointmentStatus | "Todos">("Todos");
@@ -73,12 +78,17 @@ function AdminPage() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="mx-auto max-w-6xl px-4 py-8">
-        <div className="mb-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Painel</p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">Agenda completa</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Acompanhe todos os agendamentos do seu imóvel ou escritório.
-          </p>
+        <div className="mb-8 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Painel</p>
+            <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">Agenda completa</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Acompanhe todos os agendamentos do seu imóvel ou escritório.
+            </p>
+          </div>
+          <Button onClick={onSignOut} variant="outline" size="sm" className="rounded-full">
+            <LogOut className="h-3.5 w-3.5" /> Sair
+          </Button>
         </div>
 
         {/* Stats */}

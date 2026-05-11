@@ -3,9 +3,10 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   CalendarDays, Clock, TrendingUp, XCircle, Search, MoreVertical,
-  Trash2, CheckCircle2, RotateCcw, UserX, CalendarClock,
+  Trash2, CheckCircle2, RotateCcw, UserX, CalendarClock, LogOut,
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
+import { AdminAuthGate } from "@/components/AdminAuthGate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -19,7 +20,11 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Painel — SmartFlow Agenda" }] }),
-  component: AdminPage,
+  component: () => (
+    <AdminAuthGate>
+      {({ signOut }) => <AdminPage onSignOut={signOut} />}
+    </AdminAuthGate>
+  ),
 });
 
 const STATUS_LIST: AppointmentStatus[] = [

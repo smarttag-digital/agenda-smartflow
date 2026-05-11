@@ -1,39 +1,36 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { Logo } from "./Logo";
-import { Button } from "@/components/ui/button";
-import { CalendarPlus, LayoutDashboard } from "lucide-react";
+import { Lock, CalendarDays } from "lucide-react";
 
 export function Navbar() {
   const { pathname } = useLocation();
   const isAdmin = pathname.startsWith("/admin");
   return (
     <header className="sticky top-0 z-40 glass border-b">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
+      <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2.5">
-          <Logo size={34} />
+          <Logo size={32} />
           <div className="leading-tight">
-            <p className="text-sm font-bold tracking-tight">
+            <p className="text-sm font-semibold tracking-tight">
               SmartFlow <span className="text-brand-gradient">Agenda</span>
-            </p>
-            <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-              Agendamento imobiliário
             </p>
           </div>
         </Link>
-        <nav className="flex items-center gap-2">
-          {isAdmin ? (
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/agendar"><CalendarPlus className="h-4 w-4" /> Agendar</Link>
-            </Button>
-          ) : (
-            <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
-              <Link to="/admin"><LayoutDashboard className="h-4 w-4" /> Admin</Link>
-            </Button>
-          )}
-          <Button asChild size="sm" className="bg-brand-gradient text-white shadow-glow hover:opacity-95">
-            <Link to="/agendar">Agendar agora</Link>
-          </Button>
-        </nav>
+        {isAdmin ? (
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <CalendarDays className="h-3.5 w-3.5" /> Agendar
+          </Link>
+        ) : (
+          <Link
+            to="/admin"
+            className="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <Lock className="h-3.5 w-3.5" /> Área administrativa
+          </Link>
+        )}
       </div>
     </header>
   );

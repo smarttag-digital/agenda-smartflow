@@ -9,16 +9,10 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AgendarRouteImport } from './routes/agendar'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SucessoIdRouteImport } from './routes/sucesso.$id'
 
-const AgendarRoute = AgendarRouteImport.update({
-  id: '/agendar',
-  path: '/agendar',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -38,46 +32,35 @@ const SucessoIdRoute = SucessoIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/agendar': typeof AgendarRoute
   '/sucesso/$id': typeof SucessoIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/agendar': typeof AgendarRoute
   '/sucesso/$id': typeof SucessoIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/agendar': typeof AgendarRoute
   '/sucesso/$id': typeof SucessoIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/agendar' | '/sucesso/$id'
+  fullPaths: '/' | '/admin' | '/sucesso/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/agendar' | '/sucesso/$id'
-  id: '__root__' | '/' | '/admin' | '/agendar' | '/sucesso/$id'
+  to: '/' | '/admin' | '/sucesso/$id'
+  id: '__root__' | '/' | '/admin' | '/sucesso/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
-  AgendarRoute: typeof AgendarRoute
   SucessoIdRoute: typeof SucessoIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/agendar': {
-      id: '/agendar'
-      path: '/agendar'
-      fullPath: '/agendar'
-      preLoaderRoute: typeof AgendarRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -105,7 +88,6 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
-  AgendarRoute: AgendarRoute,
   SucessoIdRoute: SucessoIdRoute,
 }
 export const routeTree = rootRouteImport

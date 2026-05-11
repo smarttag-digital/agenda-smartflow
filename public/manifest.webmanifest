@@ -1,9 +1,9 @@
 {
   "name": "SmartFlow Agenda",
   "short_name": "SF Agenda",
-  "description": "Agendamento imobiliário premium do ecossistema SmartFlow",
-  "start_url": "/",
-  "scope": "/",
+  "description": "Painel administrativo SmartFlow Agenda",
+  "start_url": "/admin",
+  "scope": "/admin",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#ffffff",

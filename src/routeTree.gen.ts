@@ -11,7 +11,12 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as SucessoIdRouteImport } from './routes/sucesso.$id'
+import { Route as AdminDisponibilidadeRouteImport } from './routes/admin.disponibilidade'
+import { Route as AdminConfiguracoesRouteImport } from './routes/admin.configuracoes'
+import { Route as AdminAgendamentosRouteImport } from './routes/admin.agendamentos'
+import { Route as AdminAgendaRouteImport } from './routes/admin.agenda'
 
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
@@ -23,39 +28,102 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
 const SucessoIdRoute = SucessoIdRouteImport.update({
   id: '/sucesso/$id',
   path: '/sucesso/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminDisponibilidadeRoute = AdminDisponibilidadeRouteImport.update({
+  id: '/disponibilidade',
+  path: '/disponibilidade',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminConfiguracoesRoute = AdminConfiguracoesRouteImport.update({
+  id: '/configuracoes',
+  path: '/configuracoes',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAgendamentosRoute = AdminAgendamentosRouteImport.update({
+  id: '/agendamentos',
+  path: '/agendamentos',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAgendaRoute = AdminAgendaRouteImport.update({
+  id: '/agenda',
+  path: '/agenda',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
+  '/admin/agenda': typeof AdminAgendaRoute
+  '/admin/agendamentos': typeof AdminAgendamentosRoute
+  '/admin/configuracoes': typeof AdminConfiguracoesRoute
+  '/admin/disponibilidade': typeof AdminDisponibilidadeRoute
   '/sucesso/$id': typeof SucessoIdRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin/agenda': typeof AdminAgendaRoute
+  '/admin/agendamentos': typeof AdminAgendamentosRoute
+  '/admin/configuracoes': typeof AdminConfiguracoesRoute
+  '/admin/disponibilidade': typeof AdminDisponibilidadeRoute
   '/sucesso/$id': typeof SucessoIdRoute
+  '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
+  '/admin/agenda': typeof AdminAgendaRoute
+  '/admin/agendamentos': typeof AdminAgendamentosRoute
+  '/admin/configuracoes': typeof AdminConfiguracoesRoute
+  '/admin/disponibilidade': typeof AdminDisponibilidadeRoute
   '/sucesso/$id': typeof SucessoIdRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/sucesso/$id'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/admin/agenda'
+    | '/admin/agendamentos'
+    | '/admin/configuracoes'
+    | '/admin/disponibilidade'
+    | '/sucesso/$id'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/sucesso/$id'
-  id: '__root__' | '/' | '/admin' | '/sucesso/$id'
+  to:
+    | '/'
+    | '/admin/agenda'
+    | '/admin/agendamentos'
+    | '/admin/configuracoes'
+    | '/admin/disponibilidade'
+    | '/sucesso/$id'
+    | '/admin'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/admin/agenda'
+    | '/admin/agendamentos'
+    | '/admin/configuracoes'
+    | '/admin/disponibilidade'
+    | '/sucesso/$id'
+    | '/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRoute
+  AdminRoute: typeof AdminRouteWithChildren
   SucessoIdRoute: typeof SucessoIdRoute
 }
 
@@ -75,6 +143,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/sucesso/$id': {
       id: '/sucesso/$id'
       path: '/sucesso/$id'
@@ -82,24 +157,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SucessoIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/disponibilidade': {
+      id: '/admin/disponibilidade'
+      path: '/disponibilidade'
+      fullPath: '/admin/disponibilidade'
+      preLoaderRoute: typeof AdminDisponibilidadeRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/configuracoes': {
+      id: '/admin/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/admin/configuracoes'
+      preLoaderRoute: typeof AdminConfiguracoesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/agendamentos': {
+      id: '/admin/agendamentos'
+      path: '/agendamentos'
+      fullPath: '/admin/agendamentos'
+      preLoaderRoute: typeof AdminAgendamentosRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/agenda': {
+      id: '/admin/agenda'
+      path: '/agenda'
+      fullPath: '/admin/agenda'
+      preLoaderRoute: typeof AdminAgendaRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
+interface AdminRouteChildren {
+  AdminAgendaRoute: typeof AdminAgendaRoute
+  AdminAgendamentosRoute: typeof AdminAgendamentosRoute
+  AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
+  AdminDisponibilidadeRoute: typeof AdminDisponibilidadeRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminAgendaRoute: AdminAgendaRoute,
+  AdminAgendamentosRoute: AdminAgendamentosRoute,
+  AdminConfiguracoesRoute: AdminConfiguracoesRoute,
+  AdminDisponibilidadeRoute: AdminDisponibilidadeRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRoute,
+  AdminRoute: AdminRouteWithChildren,
   SucessoIdRoute: SucessoIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

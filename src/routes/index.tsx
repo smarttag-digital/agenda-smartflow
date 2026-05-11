@@ -13,8 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Navbar } from "@/components/Navbar";
-import { InstallPrompt } from "@/components/InstallPrompt";
-import { addAppointment, DEFAULT_TIMES, isSlotTaken, type AppointmentType } from "@/lib/booking-store";
+import { addAppointment, isSlotTaken, type AppointmentType } from "@/lib/booking-store";
+import { generateTimeSlots, getAvailability, getDayConfig, isBlockedSlot } from "@/lib/availability-store";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -56,19 +56,24 @@ function BookingPage() {
 
   const today = startOfDay(new Date());
   const dateISO = date ? format(date, "yyyy-MM-dd") : "";
-  const todayISO = format(today, "yyyy-MM-dd");
+  const maxDate = new Date(Date.now() + getAvailability().maxAdvanceDays * 86400000);
 
   const availableTimes = useMemo(() => {
     if (!dateISO) return [];
+    const cfg = getDayConfig(dateISO);
+    if (!cfg) return [];
+    const a = getAvailability();
+    const slots = generateTimeSlots(cfg.start, cfg.end, a.interval);
     const now = new Date();
-    const nowMin = now.getHours() * 60 + now.getMinutes();
-    return DEFAULT_TIMES.map((t) => {
-      const [h, m] = t.split(":").map(Number);
-      const past = dateISO === todayISO && h * 60 + m <= nowMin;
+    const noticeMs = a.minNoticeHours * 3600 * 1000;
+    return slots.map((t) => {
+      const slotDate = new Date(`${dateISO}T${t}:00`);
+      const tooSoon = slotDate.getTime() - now.getTime() < noticeMs;
+      const blocked = isBlockedSlot(dateISO, t);
       const taken = isSlotTaken(dateISO, t);
-      return { time: t, disabled: past || taken, taken };
+      return { time: t, disabled: tooSoon || blocked || taken, taken };
     });
-  }, [dateISO, todayISO]);
+  }, [dateISO]);
 
   const canSubmit =
     name.trim() && phone.replace(/\D/g, "").length >= 10 && type && date && time;
@@ -94,7 +99,6 @@ function BookingPage() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <InstallPrompt />
 
       <main className="mx-auto max-w-2xl px-4 py-8 sm:py-12">
         <motion.div
@@ -143,7 +147,7 @@ function BookingPage() {
                 mode="single"
                 selected={date}
                 onSelect={(d) => { setDate(d); setTime(null); }}
-                disabled={(d) => d < today}
+                disabled={(d) => d < today || d > maxDate || !getDayConfig(format(d, "yyyy-MM-dd"))}
                 locale={ptBR}
                 className="pointer-events-auto"
               />

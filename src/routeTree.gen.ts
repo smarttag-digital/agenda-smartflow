@@ -13,6 +13,9 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as SucessoIdRouteImport } from './routes/sucesso.$id'
+import { Route as AdminDisponibilidadeRouteImport } from './routes/admin.disponibilidade'
+import { Route as AdminConfiguracoesRouteImport } from './routes/admin.configuracoes'
+import { Route as AdminAgendamentosRouteImport } from './routes/admin.agendamentos'
 import { Route as AdminAgendaRouteImport } from './routes/admin.agenda'
 
 const AdminRoute = AdminRouteImport.update({
@@ -35,6 +38,21 @@ const SucessoIdRoute = SucessoIdRouteImport.update({
   path: '/sucesso/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminDisponibilidadeRoute = AdminDisponibilidadeRouteImport.update({
+  id: '/disponibilidade',
+  path: '/disponibilidade',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminConfiguracoesRoute = AdminConfiguracoesRouteImport.update({
+  id: '/configuracoes',
+  path: '/configuracoes',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAgendamentosRoute = AdminAgendamentosRouteImport.update({
+  id: '/agendamentos',
+  path: '/agendamentos',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAgendaRoute = AdminAgendaRouteImport.update({
   id: '/agenda',
   path: '/agenda',
@@ -45,12 +63,18 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/admin/agenda': typeof AdminAgendaRoute
+  '/admin/agendamentos': typeof AdminAgendamentosRoute
+  '/admin/configuracoes': typeof AdminConfiguracoesRoute
+  '/admin/disponibilidade': typeof AdminDisponibilidadeRoute
   '/sucesso/$id': typeof SucessoIdRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin/agenda': typeof AdminAgendaRoute
+  '/admin/agendamentos': typeof AdminAgendamentosRoute
+  '/admin/configuracoes': typeof AdminConfiguracoesRoute
+  '/admin/disponibilidade': typeof AdminDisponibilidadeRoute
   '/sucesso/$id': typeof SucessoIdRoute
   '/admin': typeof AdminIndexRoute
 }
@@ -59,15 +83,42 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/admin/agenda': typeof AdminAgendaRoute
+  '/admin/agendamentos': typeof AdminAgendamentosRoute
+  '/admin/configuracoes': typeof AdminConfiguracoesRoute
+  '/admin/disponibilidade': typeof AdminDisponibilidadeRoute
   '/sucesso/$id': typeof SucessoIdRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/admin/agenda' | '/sucesso/$id' | '/admin/'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/admin/agenda'
+    | '/admin/agendamentos'
+    | '/admin/configuracoes'
+    | '/admin/disponibilidade'
+    | '/sucesso/$id'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin/agenda' | '/sucesso/$id' | '/admin'
-  id: '__root__' | '/' | '/admin' | '/admin/agenda' | '/sucesso/$id' | '/admin/'
+  to:
+    | '/'
+    | '/admin/agenda'
+    | '/admin/agendamentos'
+    | '/admin/configuracoes'
+    | '/admin/disponibilidade'
+    | '/sucesso/$id'
+    | '/admin'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/admin/agenda'
+    | '/admin/agendamentos'
+    | '/admin/configuracoes'
+    | '/admin/disponibilidade'
+    | '/sucesso/$id'
+    | '/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -106,6 +157,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SucessoIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/disponibilidade': {
+      id: '/admin/disponibilidade'
+      path: '/disponibilidade'
+      fullPath: '/admin/disponibilidade'
+      preLoaderRoute: typeof AdminDisponibilidadeRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/configuracoes': {
+      id: '/admin/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/admin/configuracoes'
+      preLoaderRoute: typeof AdminConfiguracoesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/agendamentos': {
+      id: '/admin/agendamentos'
+      path: '/agendamentos'
+      fullPath: '/admin/agendamentos'
+      preLoaderRoute: typeof AdminAgendamentosRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/agenda': {
       id: '/admin/agenda'
       path: '/agenda'
@@ -118,11 +190,17 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminAgendaRoute: typeof AdminAgendaRoute
+  AdminAgendamentosRoute: typeof AdminAgendamentosRoute
+  AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
+  AdminDisponibilidadeRoute: typeof AdminDisponibilidadeRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAgendaRoute: AdminAgendaRoute,
+  AdminAgendamentosRoute: AdminAgendamentosRoute,
+  AdminConfiguracoesRoute: AdminConfiguracoesRoute,
+  AdminDisponibilidadeRoute: AdminDisponibilidadeRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 

@@ -1,13 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   CalendarDays, Clock, CheckCircle2, XCircle, RotateCcw, UserX, TrendingUp, ArrowRight,
 } from "lucide-react";
 import {
-  getAppointments, formatDateBR, STATUS_DOT, STATUS_STYLES,
+  formatDateBR, STATUS_DOT, STATUS_STYLES,
   type Appointment,
 } from "@/lib/booking-store";
+import { useAppointments } from "@/hooks/use-appointments";
 import { AppointmentDialog } from "@/components/admin/AppointmentDialog";
 
 export const Route = createFileRoute("/admin/")({
@@ -15,10 +16,8 @@ export const Route = createFileRoute("/admin/")({
 });
 
 function DashboardPage() {
-  const [items, setItems] = useState<Appointment[]>([]);
+  const items = useAppointments();
   const [selected, setSelected] = useState<Appointment | null>(null);
-  const refresh = () => setItems(getAppointments());
-  useEffect(refresh, []);
 
   const todayISO = new Date().toISOString().slice(0, 10);
   const in7 = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);

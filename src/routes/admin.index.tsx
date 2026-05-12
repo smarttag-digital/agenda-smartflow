@@ -82,7 +82,7 @@ function DashboardPage() {
         appointment={selected}
         open={!!selected}
         onOpenChange={(o) => !o && setSelected(null)}
-        onChange={() => { refresh(); setSelected(getAppointments().find((x) => x.id === selected?.id) ?? null); }}
+        onChange={() => setSelected((prev) => (prev ? items.find((x) => x.id === prev.id) ?? null : null))}
       />
     </div>
   );

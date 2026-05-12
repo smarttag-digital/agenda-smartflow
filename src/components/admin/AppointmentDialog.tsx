@@ -8,9 +8,10 @@ import {
   CheckCircle2, RotateCcw, UserX, XCircle, Trash2,
 } from "lucide-react";
 import {
-  STATUS_STYLES, formatDateBR, removeAppointment, updateAppointment,
+  STATUS_STYLES, formatDateBR,
   type Appointment, type AppointmentStatus,
 } from "@/lib/booking-store";
+import { deleteAppointment, updateAppointmentStatus } from "@/hooks/use-appointments";
 import { clientWhatsAppUrl } from "@/lib/whatsapp";
 import { googleCalendarUrl } from "@/lib/google-calendar";
 import { toast } from "sonner";

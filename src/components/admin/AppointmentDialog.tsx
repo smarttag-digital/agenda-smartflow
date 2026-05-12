@@ -35,16 +35,24 @@ export function AppointmentDialog({
   if (!appointment) return null;
   const a = appointment;
 
-  const setStatus = (s: AppointmentStatus) => {
-    updateAppointment(a.id, { status: s });
-    toast.success(`Status: ${s}`);
-    onChange();
+  const setStatus = async (s: AppointmentStatus) => {
+    try {
+      await updateAppointmentStatus(a.id, { status: s });
+      toast.success(`Status: ${s}`);
+      onChange();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Erro ao atualizar status");
+    }
   };
-  const remove = () => {
-    removeAppointment(a.id);
-    toast.success("Agendamento removido");
-    onOpenChange(false);
-    onChange();
+  const remove = async () => {
+    try {
+      await deleteAppointment(a.id);
+      toast.success("Agendamento removido");
+      onOpenChange(false);
+      onChange();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Erro ao remover");
+    }
   };
 
   return (

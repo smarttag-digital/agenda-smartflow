@@ -1,4 +1,6 @@
-// Lightweight client-side store for v1 (mock). Backend (Cloud) plugs in later.
+// Types + presentation helpers for appointments.
+// The actual data lives in Supabase; use `useAppointments()` from
+// `@/hooks/use-appointments` to read/write.
 import { format } from "date-fns";
 
 export type AppointmentType = "Compra" | "Venda" | "Locação" | "Visita";
@@ -24,8 +26,6 @@ export type Appointment = {
   createdAt: string;
 };
 
-const KEY = "sf_agenda_appointments_v1";
-
 export const STATUS_STYLES: Record<AppointmentStatus, string> = {
   Novo: "bg-info/15 text-info-foreground border-info/30",
   Confirmado: "bg-success/15 text-success-foreground border-success/30",
@@ -43,47 +43,6 @@ export const STATUS_DOT: Record<AppointmentStatus, string> = {
   Reagendado: "bg-[oklch(0.82_0.16_85)]",
   "Não compareceu": "bg-muted-foreground",
 };
-
-export function getAppointments(): Appointment[] {
-  if (typeof window === "undefined") return [];
-  try {
-    return JSON.parse(localStorage.getItem(KEY) || "[]");
-  } catch {
-    return [];
-  }
-}
-
-export function saveAppointments(items: Appointment[]) {
-  localStorage.setItem(KEY, JSON.stringify(items));
-}
-
-export function addAppointment(a: Omit<Appointment, "id" | "createdAt" | "status"> & { status?: AppointmentStatus }): Appointment {
-  const item: Appointment = {
-    ...a,
-    id: crypto.randomUUID(),
-    createdAt: new Date().toISOString(),
-    status: a.status ?? "Novo",
-  };
-  const all = getAppointments();
-  all.push(item);
-  saveAppointments(all);
-  return item;
-}
-
-export function updateAppointment(id: string, patch: Partial<Appointment>) {
-  const all = getAppointments().map((a) => (a.id === id ? { ...a, ...patch } : a));
-  saveAppointments(all);
-}
-
-export function removeAppointment(id: string) {
-  saveAppointments(getAppointments().filter((a) => a.id !== id));
-}
-
-export function isSlotTaken(dateISO: string, time: string): boolean {
-  return getAppointments().some(
-    (a) => a.date === dateISO && a.time === time && a.status !== "Cancelado",
-  );
-}
 
 export const DEFAULT_TIMES = [
   "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",

@@ -26,7 +26,7 @@ function SucessoPage() {
       <div className="grid min-h-screen place-items-center bg-background px-4">
         <div className="text-center">
           <p className="text-sm text-muted-foreground">Agendamento não encontrado.</p>
-          <Button asChild className="mt-4"><Link to="/agendar">Fazer novo agendamento</Link></Button>
+          <Button asChild className="mt-4"><Link to="/">Fazer novo agendamento</Link></Button>
         </div>
       </div>
     );
@@ -95,7 +95,7 @@ function SucessoPage() {
               </a>
             </Button>
             <Button asChild variant="ghost" className="sm:col-span-2">
-              <Link to="/agendar"><RefreshCw className="h-4 w-4" /> Reagendar</Link>
+              <Link to="/"><RefreshCw className="h-4 w-4" /> Reagendar</Link>
             </Button>
           </div>
 

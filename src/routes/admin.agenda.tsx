@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   addDays, addMonths, endOfMonth, endOfWeek, format, isSameDay, isSameMonth,
@@ -7,7 +7,8 @@ import {
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { getAppointments, STATUS_DOT, type Appointment } from "@/lib/booking-store";
+import { STATUS_DOT, type Appointment } from "@/lib/booking-store";
+import { useAppointments } from "@/hooks/use-appointments";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AppointmentDialog } from "@/components/admin/AppointmentDialog";
@@ -21,10 +22,8 @@ const HOURS = Array.from({ length: 12 }, (_, i) => 8 + i); // 08..19
 function AgendaPage() {
   const [view, setView] = useState<"day" | "week" | "month">("week");
   const [cursor, setCursor] = useState<Date>(new Date());
-  const [items, setItems] = useState<Appointment[]>([]);
+  const items = useAppointments();
   const [selected, setSelected] = useState<Appointment | null>(null);
-  const refresh = () => setItems(getAppointments());
-  useEffect(refresh, []);
 
   return (
     <div className="mx-auto max-w-6xl space-y-4 p-4 sm:p-6">
@@ -76,7 +75,7 @@ function AgendaPage() {
         appointment={selected}
         open={!!selected}
         onOpenChange={(o) => !o && setSelected(null)}
-        onChange={() => { refresh(); setSelected(getAppointments().find((x) => x.id === selected?.id) ?? null); }}
+        onChange={() => setSelected((prev) => (prev ? items.find((x) => x.id === prev.id) ?? null : null))}
       />
     </div>
   );

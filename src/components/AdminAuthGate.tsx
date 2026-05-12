@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Loader2, LogOut, ShieldAlert, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
-import { ADMIN_EMAIL } from "@/lib/admin-config";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -17,6 +17,7 @@ export function AdminAuthGate({ children }: Props) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [signingIn, setSigningIn] = useState(false);
+  const isAdmin = useIsAdmin(session?.user?.id);
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
@@ -51,7 +52,7 @@ export function AdminAuthGate({ children }: Props) {
     }
   };
 
-  if (loading) {
+  if (loading || (session && isAdmin === null)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -63,9 +64,8 @@ export function AdminAuthGate({ children }: Props) {
     return <LoginScreen onSignIn={signIn} signingIn={signingIn} />;
   }
 
-  const email = session.user.email?.toLowerCase();
-  if (email !== ADMIN_EMAIL.toLowerCase()) {
-    return <UnauthorizedScreen email={email ?? ""} onSignOut={signOut} />;
+  if (!isAdmin) {
+    return <UnauthorizedScreen email={session.user.email ?? ""} onSignOut={signOut} />;
   }
 
   return <>{children({ session, signOut })}</>;

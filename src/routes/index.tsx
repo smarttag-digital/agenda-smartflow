@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { format, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -7,13 +7,15 @@ import {
   ArrowRight, Loader2, Mail, UserRound, CalendarDays, Phone,
   FileText, Home, MapPin, Sparkles,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Navbar } from "@/components/Navbar";
-import { addAppointment, isSlotTaken, type AppointmentType } from "@/lib/booking-store";
+import { type AppointmentType } from "@/lib/booking-store";
+import { createAppointment, fetchSlotsForDate } from "@/hooks/use-appointments";
 import { generateTimeSlots, getAvailability, getDayConfig, isBlockedSlot } from "@/lib/availability-store";
 
 export const Route = createFileRoute("/")({
@@ -58,6 +60,18 @@ function BookingPage() {
   const dateISO = date ? format(date, "yyyy-MM-dd") : "";
   const maxDate = new Date(Date.now() + getAvailability().maxAdvanceDays * 86400000);
 
+  // Slots taken in the selected date (from DB, refreshed when date changes)
+  const [takenSlots, setTakenSlots] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!dateISO) { setTakenSlots(new Set()); return; }
+    let cancelled = false;
+    fetchSlotsForDate(dateISO).then((rows) => {
+      if (cancelled) return;
+      setTakenSlots(new Set(rows.filter((r) => r.status !== "Cancelado").map((r) => r.time)));
+    });
+    return () => { cancelled = true; };
+  }, [dateISO]);
+
   const availableTimes = useMemo(() => {
     if (!dateISO) return [];
     const cfg = getDayConfig(dateISO);
@@ -70,10 +84,10 @@ function BookingPage() {
       const slotDate = new Date(`${dateISO}T${t}:00`);
       const tooSoon = slotDate.getTime() - now.getTime() < noticeMs;
       const blocked = isBlockedSlot(dateISO, t);
-      const taken = isSlotTaken(dateISO, t);
+      const taken = takenSlots.has(t);
       return { time: t, disabled: tooSoon || blocked || taken, taken };
     });
-  }, [dateISO]);
+  }, [dateISO, takenSlots]);
 
   const canSubmit =
     name.trim() && phone.replace(/\D/g, "").length >= 10 && type && date && time;
@@ -81,19 +95,23 @@ function BookingPage() {
   const submit = async () => {
     if (!canSubmit || !date || !time || !type) return;
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 500));
-    const item = addAppointment({
-      name: name.trim(),
-      email: email.trim() || undefined,
-      phone,
-      type,
-      date: dateISO,
-      time,
-      neighborhood: neighborhood.trim() || undefined,
-      notes: notes.trim() || undefined,
-    });
-    setLoading(false);
-    navigate({ to: "/sucesso/$id", params: { id: item.id } });
+    try {
+      const item = await createAppointment({
+        name: name.trim(),
+        email: email.trim() || undefined,
+        phone,
+        type,
+        date: dateISO,
+        time,
+        neighborhood: neighborhood.trim() || undefined,
+        notes: notes.trim() || undefined,
+      });
+      setLoading(false);
+      navigate({ to: "/sucesso/$id", params: { id: item.id } });
+    } catch (e: any) {
+      setLoading(false);
+      toast.error(e?.message ?? "Erro ao criar agendamento");
+    }
   };
 
   return (

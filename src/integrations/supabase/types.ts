@@ -14,16 +14,115 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      appointments: {
+        Row: {
+          created_at: string
+          date: string
+          email: string | null
+          id: string
+          name: string
+          neighborhood: string | null
+          notes: string | null
+          phone: string
+          status: Database["public"]["Enums"]["appointment_status"]
+          time: string
+          type: Database["public"]["Enums"]["appointment_type"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          email?: string | null
+          id?: string
+          name: string
+          neighborhood?: string | null
+          notes?: string | null
+          phone: string
+          status?: Database["public"]["Enums"]["appointment_status"]
+          time: string
+          type: Database["public"]["Enums"]["appointment_type"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          email?: string | null
+          id?: string
+          name?: string
+          neighborhood?: string | null
+          notes?: string | null
+          phone?: string
+          status?: Database["public"]["Enums"]["appointment_status"]
+          time?: string
+          type?: Database["public"]["Enums"]["appointment_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      appointment_slots: {
+        Row: {
+          date: string | null
+          id: string | null
+          status: Database["public"]["Enums"]["appointment_status"] | null
+          time: string | null
+        }
+        Insert: {
+          date?: string | null
+          id?: string | null
+          status?: Database["public"]["Enums"]["appointment_status"] | null
+          time?: string | null
+        }
+        Update: {
+          date?: string | null
+          id?: string | null
+          status?: Database["public"]["Enums"]["appointment_status"] | null
+          time?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
+      appointment_status:
+        | "Novo"
+        | "Confirmado"
+        | "Finalizado"
+        | "Cancelado"
+        | "Reagendado"
+        | "Não compareceu"
+      appointment_type: "Compra" | "Venda" | "Locação" | "Visita"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +249,17 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+      appointment_status: [
+        "Novo",
+        "Confirmado",
+        "Finalizado",
+        "Cancelado",
+        "Reagendado",
+        "Não compareceu",
+      ],
+      appointment_type: ["Compra", "Venda", "Locação", "Visita"],
+    },
   },
 } as const

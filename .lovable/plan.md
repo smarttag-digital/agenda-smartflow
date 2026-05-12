@@ -1,72 +1,56 @@
-# Refatoração completa do Admin — SmartFlow Agenda
+## Problema
 
-Vou reorganizar a área `/admin` em um painel SaaS premium com sidebar, múltiplas páginas e PWA restrito ao admin. Mantenho a área pública (`/`) limpa, sem prompts de instalação.
+Hoje os agendamentos vivem em `localStorage` (`src/lib/booking-store.ts`). Por isso:
+- Dashboard, Agenda e Lista só leem ao montar — não atualizam quando algo muda em outra aba ou sessão.
+- Não há "tempo real" possível com `localStorage` entre dispositivos.
+- Cada tela tem seu próprio `useState` → estados duplicados e cache inconsistente.
 
-## 1. Estrutura de rotas (file-based)
+## Solução
 
-```
-src/routes/
-  index.tsx                       (público, inalterado)
-  sucesso.$id.tsx                 (público, inalterado)
-  admin.tsx                       (layout: AuthGate + Sidebar + <Outlet/>)
-  admin.index.tsx                 (Dashboard)
-  admin.agenda.tsx                (Calendário diário/semanal/mensal)
-  admin.agendamentos.tsx          (Lista — atual, refinada)
-  admin.disponibilidade.tsx       (Horários, bloqueios, regras)
-  admin.configuracoes.tsx         (Aparência, perfil, notificações, WhatsApp, Google Calendar)
-```
+1. Criar tabela `appointments` no banco e ativar Supabase Realtime.
+2. Criar sistema de papéis (`user_roles` + `has_role`) — admin = papel `admin`.
+3. Criar um **único hook compartilhado** `useAppointments()` que:
+   - Busca todos os agendamentos do banco
+   - Inscreve em mudanças realtime (`postgres_changes`) e atualiza o cache
+   - É consumido por Dashboard, Agenda, Lista e Calendário — uma só fonte de verdade
 
-## 2. Componentes novos
+## Banco de dados
 
-- `src/components/admin/AdminSidebar.tsx` — sidebar shadcn (`collapsible="icon"`), itens: Dashboard, Agenda, Agendamentos, Disponibilidade, Configurações; logo no topo, perfil + sair no rodapé.
-- `src/components/admin/AdminLayout.tsx` — `SidebarProvider` + `AdminSidebar` + header com `SidebarTrigger` e botão **Instalar app** (PWA prompt aqui, não global).
-- `src/components/admin/AppointmentDialog.tsx` — modal com dados completos, botões WhatsApp / Reagendar / Cancelar / mudar status.
-- `src/components/admin/CalendarMonth.tsx`, `CalendarWeek.tsx`, `CalendarDay.tsx` — três visualizações estilo Google Calendar (CSS grid puro, sem dependências novas).
-- `src/components/admin/ThemeToggle.tsx` — light/dark/system (persistido em `localStorage`, aplica `class="dark"` no `<html>`).
+Tabela `public.appointments`:
+- `name`, `email`, `phone`, `type`, `date` (date), `time` (time), `neighborhood`, `notes`, `status`
 
-## 3. Stores locais (sem backend nesta rodada)
+Tabela `public.user_roles` + enum `app_role` + função `has_role()` (security definer).
 
-- `src/lib/availability-store.ts` — persiste em `localStorage`:
-  - `weeklyHours: Record<weekday, {start, end, enabled}>`
-  - `blockedDates: string[]` (yyyy-mm-dd)
-  - `blockedSlots: {date, time}[]`
-  - `interval: 15|30|60`
-  - `defaultDuration: number`
-  - `dailyLimit: number`
-  - `minNoticeHours: number`
-  - `maxAdvanceDays: number`
-- `src/lib/settings-store.ts` — tema, número WhatsApp comercial padrão `+5515997546750`, template de mensagem, flag "sync Google Calendar".
-- Atualizar `booking-store.ts` para respeitar `availability-store` ao gerar slots disponíveis na página pública.
+RLS:
+- **INSERT**: público (qualquer pessoa pode agendar pelo formulário público — sem login).
+- **SELECT / UPDATE / DELETE**: apenas usuários com papel `admin`.
 
-## 4. WhatsApp & Google Calendar (client-side)
+Realtime: `ALTER PUBLICATION supabase_realtime ADD TABLE public.appointments`.
 
-- `src/lib/whatsapp.ts` — `buildWhatsAppUrl(phone, appointment)` → `https://wa.me/55...?text=...` com template (nome, tipo, data, horário, bairro, observações).
-- `src/lib/google-calendar.ts` — gera link `https://calendar.google.com/calendar/render?action=TEMPLATE&...` com título "Visita ao imóvel • Corretora Letícia Souza", descrição completa, lembrete 30min (via `dates` e `details`). Sincronização real via OAuth fica para próxima rodada.
-- Botão "Adicionar ao Google Calendar" no modal de agendamento e em `/sucesso/$id`.
+Seed: inserir papel `admin` para o e-mail `vivabemeco@gmail.com` via trigger no signup, ou manualmente após primeiro login.
 
-## 5. PWA somente no admin
+## Mudanças de código
 
-- `public/manifest.webmanifest` → atualizar `start_url` para `/admin` e `scope` para `/admin`.
-- Mover `<InstallPrompt />` de `__root.tsx` (se estiver lá) para dentro de `AdminLayout`, e renderizar somente quando `display-mode != standalone` e usuário autenticado.
-- Garantir que área pública não inclua o `InstallPrompt`.
+**Novos**
+- `src/hooks/use-appointments.ts` — hook com cache (Map), fetch inicial, subscription realtime, `add/update/remove`. Mantém compatibilidade com a API atual (`STATUS_STYLES`, `formatDateBR`, etc. continuam em `booking-store.ts`).
+- `src/hooks/use-is-admin.ts` — checa se sessão tem papel `admin`.
 
-## 6. Dashboard
+**Refatorados**
+- `src/lib/booking-store.ts` — vira **apenas** types + helpers (STATUS_STYLES, STATUS_DOT, formatDateBR, DEFAULT_TIMES). Remove leitura/escrita do localStorage.
+- `src/routes/index.tsx` — formulário público chama `supabase.from('appointments').insert(...)` direto (RLS permite).
+- `src/routes/admin.index.tsx`, `admin.agenda.tsx`, `admin.agendamentos.tsx` — usam `useAppointments()` em vez de `getAppointments()` + `useState`/`useEffect`.
+- `src/components/admin/AppointmentDialog.tsx` — usa `update`/`remove` do hook.
+- `AdminAuthGate` — após login, garantir que usuário tenha papel `admin` (via `has_role`); senão, mostra "não autorizado".
 
-Cards: Hoje, Próximos 7 dias, Confirmados, Cancelados, Reagendados, Não compareceu. Lista "Próximos atendimentos" e "Últimos agendamentos" com badges de status, animações `framer-motion`.
+**PWA / sucesso** — `sucesso.$id.tsx` busca pelo id no banco em vez do localStorage.
 
-## 7. Configurações
+## Comportamento esperado
 
-Tabs: **Aparência** (tema), **Perfil** (nome/email/foto da sessão Google), **Notificações** (toggles preparados, sem backend), **WhatsApp** (número editável, preview da mensagem), **Google Calendar** (toggle "Adicionar evento automaticamente" + botão de teste).
+- Novo agendamento criado em `/` → aparece em < 500ms no Dashboard, Agenda e Lista do admin sem reload.
+- Mudança de status no `AppointmentDialog` → cards do dashboard recalculam imediatamente.
+- Cancelamento → some do calendário admin sem reload.
+- Bloqueio de horário continua local (admin-only, não precisa sincronizar entre dispositivos por enquanto — pode ser migrado depois).
 
-## Detalhes técnicos
+## Migração de dados existentes
 
-- Roteamento: arquivos `admin.tsx` (layout com `<Outlet/>`) + `admin.index.tsx` + `admin.<sub>.tsx` (convenção flat dot).
-- AuthGate envolve o layout — todas as sub-rotas herdam proteção.
-- Sem novas dependências; reutilizo `react-day-picker`, `framer-motion`, `lucide-react`, shadcn sidebar/dialog/tabs/switch já presentes.
-- Sem alterações no schema Supabase nesta rodada (tudo client-side com `localStorage`); backend real fica para próxima iteração quando você confirmar.
-
-## Fora do escopo desta rodada (faço depois se quiser)
-
-- Persistência real de agendamentos/disponibilidade no Supabase.
-- OAuth do Google Calendar para criação automática de eventos (hoje só link "Adicionar ao Calendar").
-- Envio real de WhatsApp/email (hoje só deep links).
+Agendamentos hoje em `localStorage` ficam órfãos. Se quiser, adiciono um botão "Importar agendamentos locais" no admin numa próxima iteração. Por padrão começamos limpo.

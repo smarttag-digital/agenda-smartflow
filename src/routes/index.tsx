@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { format, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -7,13 +7,15 @@ import {
   ArrowRight, Loader2, Mail, UserRound, CalendarDays, Phone,
   FileText, Home, MapPin, Sparkles,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Navbar } from "@/components/Navbar";
-import { addAppointment, isSlotTaken, type AppointmentType } from "@/lib/booking-store";
+import { type AppointmentType } from "@/lib/booking-store";
+import { createAppointment, fetchSlotsForDate } from "@/hooks/use-appointments";
 import { generateTimeSlots, getAvailability, getDayConfig, isBlockedSlot } from "@/lib/availability-store";
 
 export const Route = createFileRoute("/")({

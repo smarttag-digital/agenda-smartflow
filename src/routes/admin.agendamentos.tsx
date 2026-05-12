@@ -1,12 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { CalendarDays, Clock, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
-  getAppointments, formatDateBR, STATUS_DOT, STATUS_STYLES,
+  formatDateBR, STATUS_DOT, STATUS_STYLES,
   type Appointment, type AppointmentStatus,
 } from "@/lib/booking-store";
+import { useAppointments } from "@/hooks/use-appointments";
 import { AppointmentDialog } from "@/components/admin/AppointmentDialog";
 
 export const Route = createFileRoute("/admin/agendamentos")({
@@ -18,13 +19,14 @@ const STATUS_LIST: AppointmentStatus[] = [
 ];
 
 function AgendamentosPage() {
-  const [items, setItems] = useState<Appointment[]>([]);
+  const all = useAppointments();
+  const items = useMemo(
+    () => [...all].sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time)),
+    [all],
+  );
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<AppointmentStatus | "Todos">("Todos");
   const [selected, setSelected] = useState<Appointment | null>(null);
-
-  const refresh = () => setItems(getAppointments().sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time)));
-  useEffect(refresh, []);
 
   const filtered = useMemo(() => items.filter((a) => {
     const q = query.toLowerCase();

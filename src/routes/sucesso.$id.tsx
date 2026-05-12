@@ -3,7 +3,8 @@ import { motion } from "framer-motion";
 import { CheckCircle2, CalendarDays, Clock, Tag, MapPin, Phone, MessageCircle, CalendarPlus, RefreshCw, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
-import { getAppointments, formatDateBR } from "@/lib/booking-store";
+import { formatDateBR } from "@/lib/booking-store";
+import { fetchAppointmentById } from "@/hooks/use-appointments";
 import { useEffect, useState } from "react";
 import type { Appointment } from "@/lib/booking-store";
 
@@ -17,8 +18,7 @@ function SucessoPage() {
   const [item, setItem] = useState<Appointment | null>(null);
 
   useEffect(() => {
-    const found = getAppointments().find((a) => a.id === id);
-    if (found) setItem(found);
+    fetchAppointmentById(id).then(setItem);
   }, [id]);
 
   if (!item) {

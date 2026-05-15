@@ -17,7 +17,7 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: "system",
   whatsappNumber: "5515997546750",
   whatsappTemplate:
-    "Olá {nome}! Confirmando seu agendamento SmartFlow:\n\n• {tipo}\n• {data} às {hora}\n• {bairro}\n\nObs: {observacoes}",
+    "Olá {nome}! Confirmando seu agendamento:\n\n• {tipo}\n• {data} às {hora}\n• {bairro}\n\nObs: {observacoes}\n\nQualquer imprevisto me avisar de imediato.\n\nLetícia Souza",
   notifyEmail: true,
   notifyWhatsapp: true,
   remind30min: true,

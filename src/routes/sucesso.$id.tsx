@@ -40,10 +40,20 @@ function SucessoPage() {
   )}&dates=${fmt(startDate)}/${fmt(endDate)}&details=${encodeURIComponent(
     `Cliente: ${item.name}\nTelefone: ${item.phone}${item.notes ? "\nObs: " + item.notes : ""}`,
   )}&location=${encodeURIComponent(item.neighborhood ?? "")}`;
-  const wppText = encodeURIComponent(
-    `Olá ${item.name}! Confirmando seu agendamento SmartFlow: ${item.type} em ${formatDateBR(item.date)} às ${item.time}.`,
-  );
-  const wppLink = `https://wa.me/55${item.phone.replace(/\D/g, "")}?text=${wppText}`;
+  const BROKER_PHONE = "5515997546750";
+  const firstName = item.name.trim().split(/\s+/)[0] || item.name;
+  const lines = [
+    `Olá ${firstName}! Confirmando seu agendamento:`,
+    ``,
+    `• ${item.type}`,
+    `• ${formatDateBR(item.date)} às ${item.time}`,
+  ];
+  if (item.neighborhood?.trim()) lines.push(`• ${item.neighborhood.trim()}`);
+  if (item.notes?.trim()) {
+    lines.push(``, `Obs: ${item.notes.trim()}`);
+  }
+  lines.push(``, `Qualquer imprevisto me avisar de imediato.`, ``, `Letícia Souza`);
+  const wppLink = `https://wa.me/${BROKER_PHONE}?text=${encodeURIComponent(lines.join("\n"))}`;
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">

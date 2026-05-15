@@ -1,40 +1,40 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { format, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   ArrowRight, Loader2, Mail, UserRound, CalendarDays, Phone,
-  FileText, Home, MapPin, Sparkles,
+  FileText, Home, MapPin, Sparkles, Check, Clock,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Navbar } from "@/components/Navbar";
 import { type AppointmentType } from "@/lib/booking-store";
 import { createAppointment, fetchSlotsForDate } from "@/hooks/use-appointments";
 import { generateTimeSlots, getAvailability, getDayConfig, isBlockedSlot } from "@/lib/availability-store";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "SmartFlow Agenda — Agende seu atendimento" },
-      { name: "description", content: "Agende rapidamente seu atendimento imobiliário. Escolha data, horário e confirme em segundos." },
+      { name: "description", content: "Agende seu atendimento imobiliário em segundos. Escolha data, horário e confirme." },
       { property: "og:title", content: "SmartFlow Agenda" },
-      { property: "og:description", content: "Agendamento imobiliário rápido e premium." },
+      { property: "og:description", content: "Agendamento imobiliário premium." },
     ],
   }),
   component: BookingPage,
 });
 
-const TYPES: { value: AppointmentType; icon: any }[] = [
-  { value: "Compra", icon: Home },
-  { value: "Venda", icon: Sparkles },
-  { value: "Locação", icon: MapPin },
-  { value: "Visita", icon: CalendarDays },
+const TYPES: { value: AppointmentType; icon: any; hint: string }[] = [
+  { value: "Visita", icon: CalendarDays, hint: "Conhecer o imóvel" },
+  { value: "Compra", icon: Home, hint: "Encontrar o ideal" },
+  { value: "Venda", icon: Sparkles, hint: "Anunciar imóvel" },
+  { value: "Locação", icon: MapPin, hint: "Alugar imóvel" },
 ];
 
 function maskPhone(v: string) {
@@ -58,16 +58,18 @@ function BookingPage() {
 
   const today = startOfDay(new Date());
   const dateISO = date ? format(date, "yyyy-MM-dd") : "";
-  const maxDate = new Date(Date.now() + getAvailability().maxAdvanceDays * 86400000);
+  const maxDate = useMemo(() => new Date(Date.now() + getAvailability().maxAdvanceDays * 86400000), []);
 
-  // Slots taken in the selected date (from DB, refreshed when date changes)
   const [takenSlots, setTakenSlots] = useState<Set<string>>(new Set());
+  const [loadingSlots, setLoadingSlots] = useState(false);
   useEffect(() => {
     if (!dateISO) { setTakenSlots(new Set()); return; }
     let cancelled = false;
+    setLoadingSlots(true);
     fetchSlotsForDate(dateISO).then((rows) => {
       if (cancelled) return;
       setTakenSlots(new Set(rows.filter((r) => r.status !== "Cancelado").map((r) => r.time)));
+      setLoadingSlots(false);
     });
     return () => { cancelled = true; };
   }, [dateISO]);
@@ -89,8 +91,10 @@ function BookingPage() {
     });
   }, [dateISO, takenSlots]);
 
-  const canSubmit =
-    name.trim() && phone.replace(/\D/g, "").length >= 10 && type && date && time;
+  const phoneValid = phone.replace(/\D/g, "").length >= 10;
+  const canSubmit = name.trim() && phoneValid && type && date && time;
+
+  const currentStep = !type ? 1 : !date ? 2 : !time ? 3 : 4;
 
   const submit = async () => {
     if (!canSubmit || !date || !time || !type) return;
@@ -106,7 +110,6 @@ function BookingPage() {
         neighborhood: neighborhood.trim() || undefined,
         notes: notes.trim() || undefined,
       });
-      setLoading(false);
       navigate({ to: "/sucesso/$id", params: { id: item.id } });
     } catch (e: any) {
       setLoading(false);
@@ -116,152 +119,228 @@ function BookingPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <div className="pointer-events-none fixed inset-x-0 top-0 h-[420px] bg-[radial-gradient(60%_50%_at_50%_0%,oklch(0.7_0.18_280/.10),transparent_70%)]" />
       <Navbar />
 
-      <main className="mx-auto max-w-2xl px-4 py-8 sm:py-12">
+      <main className="relative mx-auto max-w-6xl px-4 py-6 lg:py-10">
+        {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
+          initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
-          className="text-center"
+          className="mb-6 lg:mb-8"
         >
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Agende seu atendimento
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground sm:text-base">
-            Escolha uma data e horário disponível.
+          <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+            Novo agendamento
           </p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
+            Agende seu atendimento em <span className="text-brand-gradient">segundos</span>
+          </h1>
         </motion.div>
 
-        <div className="mt-8 space-y-6">
-          {/* Tipo */}
-          <Section title="Tipo de atendimento">
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-              {TYPES.map(({ value, icon: Icon }) => {
-                const active = type === value;
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setType(value)}
-                    className={`flex flex-col items-center gap-2 rounded-2xl border p-3.5 text-sm transition-all ${
-                      active
-                        ? "border-transparent bg-brand-gradient text-white shadow-glow"
-                        : "bg-card hover:border-primary/40 hover:bg-accent/30"
-                    }`}
-                  >
-                    <Icon className={`h-5 w-5 ${active ? "" : "text-primary"}`} />
-                    <span className="font-medium">{value}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </Section>
+        {/* Stepper */}
+        <Stepper step={currentStep} />
 
-          {/* Data */}
-          <Section title="Data">
-            <div className="flex justify-center rounded-2xl border bg-card p-2 shadow-soft">
-              <Calendar
-                mode="single"
-                selected={date}
-                onSelect={(d) => { setDate(d); setTime(null); }}
-                disabled={(d) => d < today || d > maxDate || !getDayConfig(format(d, "yyyy-MM-dd"))}
-                locale={ptBR}
-                className="pointer-events-auto"
-              />
-            </div>
-          </Section>
-
-          {/* Horário */}
-          <Section title="Horário">
-            {!date ? (
-              <p className="rounded-xl border border-dashed bg-muted/30 p-4 text-center text-sm text-muted-foreground">
-                Selecione uma data para ver os horários
-              </p>
-            ) : (
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                {availableTimes.map(({ time: t, disabled, taken }) => {
-                  const active = time === t;
+        {/* Two-column layout */}
+        <div className="mt-6 grid gap-5 lg:mt-8 lg:grid-cols-[1.15fr_1fr] lg:gap-6">
+          {/* LEFT */}
+          <div className="space-y-5">
+            <Card>
+              <CardHeader index={1} title="Tipo de atendimento" />
+              <div className="grid grid-cols-2 gap-2.5">
+                {TYPES.map(({ value, icon: Icon, hint }) => {
+                  const active = type === value;
                   return (
-                    <button
-                      key={t}
+                    <motion.button
+                      key={value}
                       type="button"
-                      disabled={disabled}
-                      onClick={() => setTime(t)}
-                      className={`relative rounded-xl border py-2.5 text-sm font-medium transition-all ${
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setType(value)}
+                      className={cn(
+                        "group relative flex items-start gap-3 overflow-hidden rounded-2xl border p-3.5 text-left transition-all",
                         active
-                          ? "border-transparent bg-brand-gradient text-white shadow-glow"
-                          : disabled
-                            ? "cursor-not-allowed border-dashed text-muted-foreground/60"
-                            : "bg-card hover:border-primary/40 hover:bg-accent/30"
-                      }`}
-                    >
-                      {t}
-                      {taken && !active && (
-                        <span className="absolute -top-1 right-1 text-[9px] uppercase text-destructive/70">
-                          ocupado
-                        </span>
+                          ? "border-primary/60 bg-primary/5 shadow-[0_0_0_3px_oklch(var(--primary)/0.08)]"
+                          : "bg-card hover:border-primary/30 hover:bg-accent/40"
                       )}
-                    </button>
+                    >
+                      <div className={cn(
+                        "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors",
+                        active ? "bg-brand-gradient text-white" : "bg-muted text-foreground/70"
+                      )}>
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium">{value}</p>
+                        <p className="mt-0.5 text-[11px] text-muted-foreground">{hint}</p>
+                      </div>
+                      {active && (
+                        <motion.div
+                          layoutId="type-check"
+                          className="absolute right-2.5 top-2.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground"
+                        >
+                          <Check className="h-3 w-3" strokeWidth={3} />
+                        </motion.div>
+                      )}
+                    </motion.button>
                   );
                 })}
               </div>
-            )}
-          </Section>
+            </Card>
 
-          {/* Dados */}
-          <Section title="Seus dados">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Nome completo *" icon={UserRound}>
-                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Como devemos te chamar" />
-              </Field>
-              <Field label="Telefone *" icon={Phone}>
-                <Input
+            <Card>
+              <CardHeader index={2} title="Data" />
+              <div className="flex justify-center rounded-2xl border bg-background/40 p-1.5">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={(d) => { setDate(d); setTime(null); }}
+                  disabled={(d) => d < today || d > maxDate || !getDayConfig(format(d, "yyyy-MM-dd"))}
+                  locale={ptBR}
+                  className="pointer-events-auto"
+                />
+              </div>
+            </Card>
+
+            <Card>
+              <CardHeader index={3} title="Horário" suffix={
+                date && (
+                  <span className="text-[11px] text-muted-foreground">
+                    {format(date, "EEE, d 'de' MMM", { locale: ptBR })}
+                  </span>
+                )
+              } />
+              {!date ? (
+                <EmptyHint icon={CalendarDays} text="Selecione uma data para ver os horários" />
+              ) : loadingSlots ? (
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="h-10 animate-pulse rounded-xl bg-muted/50" />
+                  ))}
+                </div>
+              ) : availableTimes.length === 0 ? (
+                <EmptyHint icon={Clock} text="Nenhum horário disponível neste dia" />
+              ) : (
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                  <AnimatePresence mode="popLayout">
+                    {availableTimes.map(({ time: t, disabled, taken }) => {
+                      const active = time === t;
+                      return (
+                        <motion.button
+                          key={t}
+                          layout
+                          initial={{ opacity: 0, y: 4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          whileTap={{ scale: 0.96 }}
+                          type="button"
+                          disabled={disabled}
+                          onClick={() => setTime(t)}
+                          className={cn(
+                            "relative rounded-xl border py-2.5 text-sm font-medium tabular-nums transition-all",
+                            active
+                              ? "border-transparent bg-brand-gradient text-white shadow-glow"
+                              : disabled
+                                ? "cursor-not-allowed border-dashed bg-muted/20 text-muted-foreground/50 line-through decoration-1"
+                                : "bg-card hover:-translate-y-0.5 hover:border-primary/40 hover:bg-accent/50"
+                          )}
+                        >
+                          {t}
+                          {taken && !active && (
+                            <span className="absolute -top-1.5 right-1 text-[8px] uppercase tracking-wider text-destructive/70">
+                              ocupado
+                            </span>
+                          )}
+                        </motion.button>
+                      );
+                    })}
+                  </AnimatePresence>
+                </div>
+              )}
+            </Card>
+          </div>
+
+          {/* RIGHT — sticky summary + form */}
+          <div className="lg:sticky lg:top-20 lg:self-start">
+            <Card className="overflow-hidden border-primary/20">
+              {/* Summary strip */}
+              <div className="-mx-5 -mt-5 mb-5 border-b bg-gradient-to-br from-primary/[0.06] via-transparent to-transparent px-5 py-4">
+                <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                  Resumo
+                </p>
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                  <SummaryCell label="Tipo" value={type ?? "—"} active={!!type} />
+                  <SummaryCell
+                    label="Data"
+                    value={date ? format(date, "dd MMM", { locale: ptBR }) : "—"}
+                    active={!!date}
+                  />
+                  <SummaryCell label="Horário" value={time ?? "—"} active={!!time} />
+                </div>
+              </div>
+
+              <CardHeader index={4} title="Seus dados" />
+              <div className="space-y-3">
+                <PremiumInput
+                  icon={UserRound}
+                  label="Nome completo"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Como devemos te chamar"
+                />
+                <PremiumInput
+                  icon={Phone}
+                  label="Telefone"
+                  required
                   value={phone}
                   onChange={(e) => setPhone(maskPhone(e.target.value))}
                   placeholder="(11) 99999-9999"
                   inputMode="tel"
                 />
-              </Field>
-              <Field label="Email (opcional)" icon={Mail} className="sm:col-span-2">
-                <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" type="email" />
-              </Field>
-            </div>
-          </Section>
-
-          {/* Opcionais */}
-          <Section title="Detalhes (opcional)">
-            <div className="grid gap-3">
-              <Field label="Bairro / Condomínio" icon={MapPin}>
-                <Input value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} placeholder="Ex: Vila Madalena" />
-              </Field>
-              <Field label="Observações" icon={FileText}>
-                <Textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Algo importante para o atendimento?"
-                  rows={3}
+                <PremiumInput
+                  icon={Mail}
+                  label="Email"
+                  optional
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="seu@email.com"
                 />
-              </Field>
-            </div>
-          </Section>
+                <PremiumInput
+                  icon={MapPin}
+                  label="Bairro / Condomínio"
+                  optional
+                  value={neighborhood}
+                  onChange={(e) => setNeighborhood(e.target.value)}
+                  placeholder="Ex: Vila Madalena"
+                />
+                <div>
+                  <FloatingLabel icon={FileText} label="Observações" optional />
+                  <Textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Algo importante para o atendimento?"
+                    rows={3}
+                    className="mt-1.5 resize-none rounded-xl border-border/70 bg-background/60 focus-visible:ring-1 focus-visible:ring-primary/40"
+                  />
+                </div>
+              </div>
 
-          <div className="sticky bottom-3 pt-2 sm:static">
-            <Button
-              onClick={submit}
-              disabled={!canSubmit || loading}
-              size="lg"
-              className="h-14 w-full bg-brand-gradient text-base font-semibold text-white shadow-glow hover:opacity-95 disabled:opacity-50"
-            >
-              {loading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <>Confirmar agendamento <ArrowRight className="h-4 w-4" /></>
-              )}
-            </Button>
-            <p className="mt-2 text-center text-[11px] text-muted-foreground">
-              Confirmação imediata — sem necessidade de cadastro.
-            </p>
+              <Button
+                onClick={submit}
+                disabled={!canSubmit || loading}
+                size="lg"
+                className="mt-5 h-12 w-full rounded-xl bg-brand-gradient text-base font-semibold text-white shadow-glow transition-all hover:opacity-95 hover:shadow-lg disabled:opacity-40 disabled:shadow-none"
+              >
+                {loading ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <>Confirmar agendamento <ArrowRight className="h-4 w-4" /></>
+                )}
+              </Button>
+              <p className="mt-2.5 text-center text-[11px] text-muted-foreground">
+                Confirmação imediata · Sem cadastro
+              </p>
+            </Card>
           </div>
         </div>
       </main>
@@ -269,26 +348,119 @@ function BookingPage() {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+/* --- Subcomponents --- */
+
+function Stepper({ step }: { step: number }) {
+  const labels = ["Tipo", "Data", "Horário", "Dados"];
   return (
-    <section>
-      <h3 className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        {title}
-      </h3>
-      {children}
-    </section>
+    <div className="flex items-center gap-2 overflow-x-auto pb-1">
+      {labels.map((label, i) => {
+        const idx = i + 1;
+        const done = step > idx;
+        const active = step === idx;
+        return (
+          <div key={label} className="flex items-center gap-2">
+            <div className={cn(
+              "flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
+              active && "border-primary/50 bg-primary/10 text-foreground",
+              done && "border-transparent bg-foreground text-background",
+              !active && !done && "border-border bg-card text-muted-foreground"
+            )}>
+              <span className={cn(
+                "flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold",
+                done ? "bg-background/20" : active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+              )}>
+                {done ? <Check className="h-3 w-3" strokeWidth={3} /> : idx}
+              </span>
+              {label}
+            </div>
+            {i < labels.length - 1 && (
+              <div className={cn("h-px w-4 transition-colors", done ? "bg-foreground" : "bg-border")} />
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
-function Field({
-  label, icon: Icon, children, className,
-}: { label: string; icon: any; children: React.ReactNode; className?: string }) {
+function Card({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={className}>
-      <Label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-        <Icon className="h-3 w-3" /> {label}
-      </Label>
+    <motion.section
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className={cn("rounded-2xl border bg-card/70 p-5 shadow-soft backdrop-blur-sm", className)}
+    >
       {children}
+    </motion.section>
+  );
+}
+
+function CardHeader({ index, title, suffix }: { index: number; title: string; suffix?: React.ReactNode }) {
+  return (
+    <div className="mb-3 flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-bold text-muted-foreground">
+          {index}
+        </span>
+        <h3 className="text-sm font-semibold tracking-tight">{title}</h3>
+      </div>
+      {suffix}
+    </div>
+  );
+}
+
+function SummaryCell({ label, value, active }: { label: string; value: string; active: boolean }) {
+  return (
+    <div className={cn(
+      "rounded-xl border px-2.5 py-2 transition-colors",
+      active ? "border-primary/30 bg-background" : "border-dashed bg-background/40"
+    )}>
+      <p className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className={cn(
+        "mt-0.5 truncate text-sm font-semibold tabular-nums",
+        active ? "text-foreground" : "text-muted-foreground/60"
+      )}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function EmptyHint({ icon: Icon, text }: { icon: any; text: string }) {
+  return (
+    <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed bg-muted/20 px-4 py-8 text-center">
+      <Icon className="h-5 w-5 text-muted-foreground/60" />
+      <p className="text-xs text-muted-foreground">{text}</p>
+    </div>
+  );
+}
+
+function FloatingLabel({ icon: Icon, label, required, optional }: { icon: any; label: string; required?: boolean; optional?: boolean }) {
+  return (
+    <label className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+      <Icon className="h-3 w-3" />
+      {label}
+      {required && <span className="text-primary">*</span>}
+      {optional && <span className="normal-case tracking-normal text-muted-foreground/60">(opcional)</span>}
+    </label>
+  );
+}
+
+function PremiumInput({
+  icon, label, required, optional, ...props
+}: { icon: any; label: string; required?: boolean; optional?: boolean } & React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <div>
+      <FloatingLabel icon={icon} label={label} required={required} optional={optional} />
+      <Input
+        {...props}
+        className={cn(
+          "mt-1.5 h-11 rounded-xl border-border/70 bg-background/60 px-3.5 text-sm transition-all focus-visible:border-primary/50 focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-primary/40",
+          props.className
+        )}
+      />
     </div>
   );
 }

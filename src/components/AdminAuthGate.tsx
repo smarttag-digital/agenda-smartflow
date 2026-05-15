@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Loader2, LogOut, ShieldAlert, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
-import { useIsAdmin } from "@/hooks/use-is-admin";
+import { ADMIN_EMAIL } from "@/lib/admin-config";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -17,7 +17,8 @@ export function AdminAuthGate({ children }: Props) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [signingIn, setSigningIn] = useState(false);
-  const isAdmin = useIsAdmin(session?.user?.id);
+  const userEmail = session?.user?.email?.trim().toLowerCase() ?? null;
+  const isAdmin = userEmail ? userEmail === ADMIN_EMAIL.trim().toLowerCase() : null;
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {

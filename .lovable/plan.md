@@ -1,56 +1,61 @@
-## Problema
+# Reforço de backend, autenticação e segurança
 
-Hoje os agendamentos vivem em `localStorage` (`src/lib/booking-store.ts`). Por isso:
-- Dashboard, Agenda e Lista só leem ao montar — não atualizam quando algo muda em outra aba ou sessão.
-- Não há "tempo real" possível com `localStorage` entre dispositivos.
-- Cada tela tem seu próprio `useState` → estados duplicados e cache inconsistente.
+## Escopo aprovado
 
-## Solução
+1. Auditoria + correções no que já existe (RLS, validações backend)
+2. Estrutura de auditoria/logs
+3. Validação de conflito: UNIQUE no banco + validação amigável em server function
+4. Google Calendar com sincronização real (OAuth + tokens criptografados)
 
-1. Criar tabela `appointments` no banco e ativar Supabase Realtime.
-2. Criar sistema de papéis (`user_roles` + `has_role`) — admin = papel `admin`.
-3. Criar um **único hook compartilhado** `useAppointments()` que:
-   - Busca todos os agendamentos do banco
-   - Inscreve em mudanças realtime (`postgres_changes`) e atualiza o cache
-   - É consumido por Dashboard, Agenda, Lista e Calendário — uma só fonte de verdade
+## Estado atual
 
-## Banco de dados
+- `appointments` e `user_roles` já têm RLS com policies via `has_role()`.
+- Admin já é validado no banco (não só no frontend) via `has_role(auth.uid(), 'admin')`.
+- Service role nunca é exposto ao cliente (`client.server.ts` é server-only).
+- Lógica de booking hoje vive no cliente — qualquer pessoa pode chamar `supabase.from('appointments').insert(...)` graças ao policy `Anyone can create appointments`.
 
-Tabela `public.appointments`:
-- `name`, `email`, `phone`, `type`, `date` (date), `time` (time), `neighborhood`, `notes`, `status`
+## Etapa 1 — Hardening do que existe (esta entrega)
 
-Tabela `public.user_roles` + enum `app_role` + função `has_role()` (security definer).
+### Banco (migration)
 
-RLS:
-- **INSERT**: público (qualquer pessoa pode agendar pelo formulário público — sem login).
-- **SELECT / UPDATE / DELETE**: apenas usuários com papel `admin`.
+**a) Constraint anti-duplicidade**
+```sql
+CREATE UNIQUE INDEX appointments_unique_slot
+  ON public.appointments (date, time)
+  WHERE status <> 'Cancelado';
+```
+Bloqueia 100% no banco, mesmo com requests simultâneos.
 
-Realtime: `ALTER PUBLICATION supabase_realtime ADD TABLE public.appointments`.
+**b) Fechar INSERT público**
+Remover policy `Anyone can create appointments`. Toda criação passa a ir por server function (validação + service-role insert).
 
-Seed: inserir papel `admin` para o e-mail `vivabemeco@gmail.com` via trigger no signup, ou manualmente após primeiro login.
+**c) Auditoria**
+- Tabela `public.audit_logs` (id, actor_id, actor_email, action, entity_type, entity_id, metadata jsonb, created_at).
+- RLS: só admin lê. Insert via service role apenas.
+- Triggers em `appointments` (INSERT/UPDATE/DELETE) que gravam em `audit_logs` com `auth.uid()` / `auth.jwt() ->> 'email'` quando disponível.
 
-## Mudanças de código
+### Server functions (createServerFn)
 
-**Novos**
-- `src/hooks/use-appointments.ts` — hook com cache (Map), fetch inicial, subscription realtime, `add/update/remove`. Mantém compatibilidade com a API atual (`STATUS_STYLES`, `formatDateBR`, etc. continuam em `booking-store.ts`).
-- `src/hooks/use-is-admin.ts` — checa se sessão tem papel `admin`.
+- `createPublicAppointment` — valida payload (Zod), checa disponibilidade, insere via `supabaseAdmin`. Captura erro de UNIQUE como mensagem amigável "horário acabou de ser reservado".
+- `updateAppointmentStatusFn` — protegida com `requireSupabaseAuth` + checagem `has_role admin`, registra audit log explícito (motivo de cancelamento etc).
+- `deleteAppointmentFn` — idem.
 
-**Refatorados**
-- `src/lib/booking-store.ts` — vira **apenas** types + helpers (STATUS_STYLES, STATUS_DOT, formatDateBR, DEFAULT_TIMES). Remove leitura/escrita do localStorage.
-- `src/routes/index.tsx` — formulário público chama `supabase.from('appointments').insert(...)` direto (RLS permite).
-- `src/routes/admin.index.tsx`, `admin.agenda.tsx`, `admin.agendamentos.tsx` — usam `useAppointments()` em vez de `getAppointments()` + `useState`/`useEffect`.
-- `src/components/admin/AppointmentDialog.tsx` — usa `update`/`remove` do hook.
-- `AdminAuthGate` — após login, garantir que usuário tenha papel `admin` (via `has_role`); senão, mostra "não autorizado".
+### Cliente
 
-**PWA / sucesso** — `sucesso.$id.tsx` busca pelo id no banco em vez do localStorage.
+- `src/routes/index.tsx` chama `createPublicAppointment` (server fn) em vez de inserir direto via `supabase`.
+- `src/hooks/use-appointments.ts` mantém realtime para leitura admin, mas `createAppointment`/`updateAppointmentStatus`/`deleteAppointment` passam a chamar as server fns.
+- `attachSupabaseAuth` confirmado em `src/start.ts`.
 
-## Comportamento esperado
+## Etapa 2 — Google Calendar (próxima entrega)
 
-- Novo agendamento criado em `/` → aparece em < 500ms no Dashboard, Agenda e Lista do admin sem reload.
-- Mudança de status no `AppointmentDialog` → cards do dashboard recalculam imediatamente.
-- Cancelamento → some do calendário admin sem reload.
-- Bloqueio de horário continua local (admin-only, não precisa sincronizar entre dispositivos por enquanto — pode ser migrado depois).
+Não vai nesta migration. Requer:
+- Conectar o Google Calendar connector (`standard_connectors--connect`) ou implementar OAuth próprio com tokens criptografados em `admin_integrations` (tabela nova, service-role-only).
+- Server function `syncAppointmentToCalendar(appointmentId)` chamada após create/update.
+- Webhook/watch opcional para reverso.
 
-## Migração de dados existentes
+Vou pedir confirmação antes de começar a etapa 2.
 
-Agendamentos hoje em `localStorage` ficam órfãos. Se quiser, adiciono um botão "Importar agendamentos locais" no admin numa próxima iteração. Por padrão começamos limpo.
+## Fora de escopo nesta rodada
+
+- Rate limiting (infra do Lovable Cloud não tem primitiva — conforme diretrizes).
+- CRM / leads / pipeline / financeiro (módulos inexistentes hoje).

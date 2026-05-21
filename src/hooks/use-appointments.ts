@@ -98,40 +98,24 @@ export async function refreshAppointments() {
   await hydrate();
 }
 
-export async function createAppointment(input: Omit<Appointment, "id" | "createdAt" | "status"> & { status?: AppointmentStatus }) {
-  const payload = {
-    name: input.name,
-    email: input.email ?? null,
-    phone: input.phone,
-    type: input.type,
-    date: input.date,
-    time: input.time,
-    neighborhood: input.neighborhood ?? null,
-    notes: input.notes ?? null,
-    status: input.status ?? "Novo",
-  };
-  const { data, error } = await supabase.from("appointments").insert(payload).select().single();
-  if (error) throw error;
-  const row = fromRow(data);
-  // Optimistic local update (realtime may also push it)
-  if (!cache.some((a) => a.id === row.id)) {
-    cache = [row, ...cache];
-    emit();
-  }
-  return row;
+import { updateAppointmentFn, deleteAppointmentFn } from "@/lib/appointments.functions";
+
+export async function createAppointment(_input: never): Promise<never> {
+  throw new Error("Use createAppointmentFn server function via useServerFn() instead.");
 }
 
-export async function updateAppointmentStatus(id: string, patch: Partial<Pick<Appointment, "status" | "date" | "time" | "notes" | "neighborhood">>) {
-  const { error } = await supabase.from("appointments").update(patch).eq("id", id);
-  if (error) throw error;
-  // optimistic
-  cache = cache.map((a) => (a.id === id ? { ...a, ...patch } as Appointment : a));
+export async function updateAppointmentStatus(
+  id: string,
+  patch: Partial<Pick<Appointment, "status" | "date" | "time" | "notes" | "neighborhood">>,
+) {
+  await updateAppointmentFn({ data: { id, patch: patch as any } });
+  // optimistic — realtime will reconcile
+  cache = cache.map((a) => (a.id === id ? ({ ...a, ...patch } as Appointment) : a));
   emit();
 }
 
 export async function deleteAppointment(id: string) {
-  const { error } = await supabase.from("appointments").delete().eq("id", id);
-  if (error) throw error;
+  await deleteAppointmentFn({ data: { id } });
   cache = cache.filter((a) => a.id !== id);
   emit();
 }

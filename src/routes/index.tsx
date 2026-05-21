@@ -14,7 +14,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Navbar } from "@/components/Navbar";
 import { type AppointmentType } from "@/lib/booking-store";
-import { createAppointment, fetchSlotsForDate } from "@/hooks/use-appointments";
+import { fetchSlotsForDate } from "@/hooks/use-appointments";
+import { useServerFn } from "@tanstack/react-start";
+import { createAppointmentFn } from "@/lib/appointments.functions";
 import { generateTimeSlots, getAvailability, getDayConfig, isBlockedSlot } from "@/lib/availability-store";
 import { cn } from "@/lib/utils";
 
@@ -96,24 +98,28 @@ function BookingPage() {
 
   const currentStep = !type ? 1 : !date ? 2 : !time ? 3 : 4;
 
+  const createFn = useServerFn(createAppointmentFn);
   const submit = async () => {
     if (!canSubmit || !date || !time || !type) return;
     setLoading(true);
     try {
-      const item = await createAppointment({
-        name: name.trim(),
-        email: email.trim() || undefined,
-        phone,
-        type,
-        date: dateISO,
-        time,
-        neighborhood: neighborhood.trim() || undefined,
-        notes: notes.trim() || undefined,
+      const item = await createFn({
+        data: {
+          name: name.trim(),
+          email: email.trim() || undefined,
+          phone,
+          type,
+          date: dateISO,
+          time,
+          neighborhood: neighborhood.trim() || undefined,
+          notes: notes.trim() || undefined,
+        },
       });
       navigate({ to: "/sucesso/$id", params: { id: item.id } });
     } catch (e: any) {
       setLoading(false);
-      toast.error(e?.message ?? "Erro ao criar agendamento");
+      const msg = typeof e?.message === "string" ? e.message : "Erro ao criar agendamento";
+      toast.error(msg);
     }
   };
 

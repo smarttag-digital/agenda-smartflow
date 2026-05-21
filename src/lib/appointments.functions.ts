@@ -8,7 +8,7 @@ import { ADMIN_EMAIL } from "@/lib/admin-config";
 const TimeSchema = z.string().regex(/^\d{2}:\d{2}$/, "Horário inválido");
 const DateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida");
 
-const TypeSchema = z.enum(["Visita", "Avaliação", "Reunião", "Outro"]);
+const TypeSchema = z.enum(["Compra", "Venda", "Locação", "Visita"]);
 const StatusSchema = z.enum(["Novo", "Confirmado", "Realizado", "Cancelado"]);
 
 const CreateSchema = z.object({

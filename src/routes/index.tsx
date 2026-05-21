@@ -14,7 +14,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Navbar } from "@/components/Navbar";
 import { type AppointmentType } from "@/lib/booking-store";
-import { createAppointment, fetchSlotsForDate } from "@/hooks/use-appointments";
+import { fetchSlotsForDate } from "@/hooks/use-appointments";
+import { useServerFn } from "@tanstack/react-start";
+import { createAppointmentFn } from "@/lib/appointments.functions";
 import { generateTimeSlots, getAvailability, getDayConfig, isBlockedSlot } from "@/lib/availability-store";
 import { cn } from "@/lib/utils";
 

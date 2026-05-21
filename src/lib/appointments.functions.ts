@@ -2,51 +2,46 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { ADMIN_EMAIL } from "@/lib/admin-config";
+import { assertAdminContext, writeAuditLog } from "@/lib/appointments.server";
 
-// ------- Validation -------
 const TimeSchema = z.string().regex(/^\d{2}:\d{2}$/, "Horário inválido");
 const DateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida");
-
 const TypeSchema = z.enum(["Compra", "Venda", "Locação", "Visita"]);
 const StatusSchema = z.enum(["Novo", "Confirmado", "Realizado", "Cancelado"]);
 
 const CreateSchema = z.object({
   name: z.string().trim().min(2).max(120),
-  email: z.string().trim().email().max(200).optional().or(z.literal("")).transform((v) => (v ? v : undefined)),
+  email: z
+    .string()
+    .trim()
+    .max(200)
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => (v ? v : undefined))
+    .refine((v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), "E-mail inválido"),
   phone: z.string().trim().min(8).max(30),
   type: TypeSchema,
   date: DateSchema,
   time: TimeSchema,
-  neighborhood: z.string().trim().max(160).optional().or(z.literal("")).transform((v) => (v ? v : undefined)),
-  notes: z.string().trim().max(1000).optional().or(z.literal("")).transform((v) => (v ? v : undefined)),
+  neighborhood: z
+    .string()
+    .trim()
+    .max(160)
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => (v ? v : undefined)),
+  notes: z
+    .string()
+    .trim()
+    .max(1000)
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => (v ? v : undefined)),
 });
 
-// ------- Helpers -------
-function isAdminEmail(email: string | null | undefined): boolean {
-  return !!email && email.trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase();
-}
-
-async function assertAdmin(context: { supabase: any; userId: string; claims: any }) {
-  const email = (context.claims?.email as string | undefined) ?? null;
-  if (isAdminEmail(email)) return { userId: context.userId, email };
-  const { data, error } = await context.supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", context.userId)
-    .eq("role", "admin")
-    .maybeSingle();
-  if (error || !data) {
-    throw new Response("Forbidden", { status: 403 });
-  }
-  return { userId: context.userId, email };
-}
-
-// ------- Public: create appointment -------
 export const createAppointmentFn = createServerFn({ method: "POST" })
   .inputValidator((input) => CreateSchema.parse(input))
   .handler(async ({ data }) => {
-    // Backend conflict check (friendly) — UNIQUE index is the final safety net.
     const { data: existing, error: checkErr } = await supabaseAdmin
       .from("appointments")
       .select("id")
@@ -61,7 +56,6 @@ export const createAppointmentFn = createServerFn({ method: "POST" })
     if (existing) {
       throw new Response("Este horário acabou de ser reservado. Escolha outro.", { status: 409 });
     }
-
     const { data: inserted, error } = await supabaseAdmin
       .from("appointments")
       .insert({
@@ -77,7 +71,6 @@ export const createAppointmentFn = createServerFn({ method: "POST" })
       })
       .select()
       .single();
-
     if (error) {
       if ((error as any).code === "23505") {
         throw new Response("Este horário acabou de ser reservado. Escolha outro.", { status: 409 });
@@ -88,7 +81,6 @@ export const createAppointmentFn = createServerFn({ method: "POST" })
     return { id: inserted.id as string };
   });
 
-// ------- Admin: update -------
 const UpdateSchema = z.object({
   id: z.string().uuid(),
   patch: z
@@ -106,9 +98,7 @@ export const updateAppointmentFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => UpdateSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { email } = await assertAdmin(context as any);
-
-    // If date/time changes, re-check availability against the unique slot.
+    const { userId, email } = await assertAdminContext(context as any);
     if (data.patch.date || data.patch.time) {
       const { data: current } = await supabaseAdmin
         .from("appointments")
@@ -132,7 +122,6 @@ export const updateAppointmentFn = createServerFn({ method: "POST" })
         }
       }
     }
-
     const { error } = await supabaseAdmin
       .from("appointments")
       .update(data.patch as any)
@@ -144,38 +133,35 @@ export const updateAppointmentFn = createServerFn({ method: "POST" })
       console.error("[updateAppointmentFn]", error);
       throw new Response("Falha ao atualizar agendamento", { status: 500 });
     }
-    // Extra audit entry for explicit admin context (trigger also logs).
-    await supabaseAdmin.from("audit_logs").insert({
+    await writeAuditLog({
       action: "appointment.updated.admin",
       entity_type: "appointment",
       entity_id: data.id,
-      actor_id: context.userId,
-      actor_email: email ?? null,
+      actor_id: userId,
+      actor_email: email,
       metadata: data.patch as any,
     });
     return { ok: true };
   });
 
-// ------- Admin: delete -------
 const DeleteSchema = z.object({ id: z.string().uuid() });
 
 export const deleteAppointmentFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => DeleteSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { email } = await assertAdmin(context as any);
+    const { userId, email } = await assertAdminContext(context as any);
     const { error } = await supabaseAdmin.from("appointments").delete().eq("id", data.id);
     if (error) {
       console.error("[deleteAppointmentFn]", error);
       throw new Response("Falha ao excluir agendamento", { status: 500 });
     }
-    await supabaseAdmin.from("audit_logs").insert({
+    await writeAuditLog({
       action: "appointment.deleted.admin",
       entity_type: "appointment",
       entity_id: data.id,
-      actor_id: context.userId,
-      actor_email: email ?? null,
-      metadata: {},
+      actor_id: userId,
+      actor_email: email,
     });
     return { ok: true };
   });

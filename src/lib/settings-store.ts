@@ -22,7 +22,7 @@ export const DEFAULT_SETTINGS: Settings = {
   notifyWhatsapp: true,
   remind30min: true,
   syncGoogleCalendar: true,
-  eventTitle: "Visita ao imóvel • Corretora Letícia Souza",
+  eventTitle: "VISITA IMÓVEL • CORRETORA LETÍCIA SOUZA",
 };
 
 export function getSettings(): Settings {

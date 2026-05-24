@@ -35,10 +35,20 @@ function SucessoPage() {
   const startDate = new Date(`${item.date}T${item.time}:00`);
   const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
   const fmt = (d: Date) => d.toISOString().replace(/[-:]|\.\d{3}/g, "");
+  const calTitle = "VISITA IMÓVEL • CORRETORA LETÍCIA SOUZA";
+  const calDetails = [
+    `Cliente: ${item.name}`,
+    `Telefone: ${item.phone}`,
+    `Tipo: ${item.type}`,
+    item.neighborhood ? `Bairro/Condomínio: ${item.neighborhood}` : null,
+    item.notes ? `Observações: ${item.notes}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
   const calLink = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
-    `SmartFlow · ${item.type}`,
+    calTitle,
   )}&dates=${fmt(startDate)}/${fmt(endDate)}&details=${encodeURIComponent(
-    `Cliente: ${item.name}\nTelefone: ${item.phone}${item.notes ? "\nObs: " + item.notes : ""}`,
+    calDetails,
   )}&location=${encodeURIComponent(item.neighborhood ?? "")}`;
   const BROKER_PHONE = "5515997546750";
   const firstName = item.name.trim().split(/\s+/)[0] || item.name;

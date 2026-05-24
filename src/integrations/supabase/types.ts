@@ -92,6 +92,45 @@ export type Database = {
         }
         Relationships: []
       }
+      availability_config: {
+        Row: {
+          blocked_dates: Json
+          blocked_slots: Json
+          daily_limit: number
+          default_duration: number
+          id: boolean
+          interval_min: number
+          max_advance_days: number
+          min_notice_hours: number
+          updated_at: string
+          weekly_hours: Json
+        }
+        Insert: {
+          blocked_dates?: Json
+          blocked_slots?: Json
+          daily_limit?: number
+          default_duration?: number
+          id?: boolean
+          interval_min?: number
+          max_advance_days?: number
+          min_notice_hours?: number
+          updated_at?: string
+          weekly_hours: Json
+        }
+        Update: {
+          blocked_dates?: Json
+          blocked_slots?: Json
+          daily_limit?: number
+          default_duration?: number
+          id?: boolean
+          interval_min?: number
+          max_advance_days?: number
+          min_notice_hours?: number
+          updated_at?: string
+          weekly_hours?: Json
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string

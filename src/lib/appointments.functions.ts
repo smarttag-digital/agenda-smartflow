@@ -9,6 +9,38 @@ const DateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida");
 const TypeSchema = z.enum(["Compra", "Venda", "Locação", "Visita"]);
 const StatusSchema = z.enum(["Novo", "Confirmado", "Realizado", "Cancelado"]);
 
+export const getSlotsForDateFn = createServerFn({ method: "GET" })
+  .inputValidator((input) => z.object({ date: DateSchema }).parse(input))
+  .handler(async ({ data }) => {
+    const { data: rows, error } = await supabaseAdmin
+      .from("appointments")
+      .select("time,status")
+      .eq("date", data.date);
+    if (error) {
+      console.error("[getSlotsForDateFn]", error);
+      throw new Response("Erro ao consultar disponibilidade", { status: 500 });
+    }
+    return (rows ?? []).map((r: any) => ({
+      time: typeof r.time === "string" ? r.time.slice(0, 5) : r.time,
+      status: r.status as string,
+    }));
+  });
+
+export const getAppointmentByIdFn = createServerFn({ method: "GET" })
+  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data }) => {
+    const { data: row, error } = await supabaseAdmin
+      .from("appointments")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (error) {
+      console.error("[getAppointmentByIdFn]", error);
+      throw new Response("Erro ao buscar agendamento", { status: 500 });
+    }
+    return row ?? null;
+  });
+
 const CreateSchema = z.object({
   name: z.string().trim().min(2).max(120),
   email: z

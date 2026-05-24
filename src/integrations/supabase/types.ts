@@ -138,6 +138,29 @@ export type Database = {
       }
     }
     Functions: {
+      get_appointment_public: {
+        Args: { _id: string }
+        Returns: {
+          appt_date: string
+          appt_time: string
+          created_at: string
+          email: string
+          id: string
+          name: string
+          neighborhood: string
+          notes: string
+          phone: string
+          status: Database["public"]["Enums"]["appointment_status"]
+          type: Database["public"]["Enums"]["appointment_type"]
+        }[]
+      }
+      get_slots_for_date: {
+        Args: { _date: string }
+        Returns: {
+          slot_status: Database["public"]["Enums"]["appointment_status"]
+          slot_time: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

@@ -120,25 +120,27 @@ export async function deleteAppointment(id: string) {
   emit();
 }
 
-// Public helper: read minimal slot info (date/time/status) without admin auth
+import { getSlotsForDateFn, getAppointmentByIdFn } from "@/lib/appointments.functions";
+
+// Public helper: read minimal slot info (date/time/status) via secure server function
 export async function fetchSlotsForDate(dateISO: string): Promise<{ time: string; status: AppointmentStatus }[]> {
-  const { data, error } = await supabase
-    .from("appointments")
-    .select("time,status")
-    .eq("date", dateISO);
-  if (error) {
-    console.error("[appointments] fetchSlotsForDate", error);
+  try {
+    const rows = await getSlotsForDateFn({ data: { date: dateISO } });
+    return rows.map((r) => ({ time: r.time, status: r.status as AppointmentStatus }));
+  } catch (e) {
+    console.error("[appointments] fetchSlotsForDate", e);
     return [];
   }
-  return (data ?? []).map((r: any) => ({
-    time: typeof r.time === "string" ? r.time.slice(0, 5) : r.time,
-    status: r.status as AppointmentStatus,
-  }));
 }
 
-// Public helper: fetch a single appointment by id (anyone can read minimal info via the public SELECT policy)
+// Public helper: fetch a single appointment by id via secure server function
 export async function fetchAppointmentById(id: string): Promise<Appointment | null> {
-  const { data, error } = await supabase.from("appointments").select("*").eq("id", id).maybeSingle();
-  if (error || !data) return null;
-  return fromRow(data);
+  try {
+    const row = await getAppointmentByIdFn({ data: { id } });
+    if (!row) return null;
+    return fromRow(row);
+  } catch (e) {
+    console.error("[appointments] fetchAppointmentById", e);
+    return null;
+  }
 }

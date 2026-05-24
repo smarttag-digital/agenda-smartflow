@@ -74,6 +74,80 @@ const CreateSchema = z.object({
 export const createAppointmentFn = createServerFn({ method: "POST" })
   .inputValidator((input) => CreateSchema.parse(input))
   .handler(async ({ data }) => {
+    // Server-side business-rule validation (cannot be bypassed by skipping the UI)
+    const { data: cfg, error: cfgErr } = await supabaseAdmin
+      .from("availability_config")
+      .select("*")
+      .eq("id", true)
+      .maybeSingle();
+    if (cfgErr || !cfg) {
+      console.error("[createAppointmentFn] config load", cfgErr);
+      throw new Response("Configuração de disponibilidade indisponível", { status: 500 });
+    }
+
+    const [y, m, d] = data.date.split("-").map(Number);
+    const [hh, mm] = data.time.split(":").map(Number);
+    const slot = new Date(y, m - 1, d, hh, mm, 0, 0);
+    const now = new Date();
+    const minNoticeMs = (cfg.min_notice_hours ?? 0) * 60 * 60 * 1000;
+    if (slot.getTime() - now.getTime() < minNoticeMs) {
+      throw new Response(
+        `Necessário pelo menos ${cfg.min_notice_hours}h de antecedência.`,
+        { status: 422 },
+      );
+    }
+
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const maxDate = new Date(today.getTime() + (cfg.max_advance_days ?? 30) * 86400000);
+    const dateOnly = new Date(y, m - 1, d);
+    if (dateOnly > maxDate) {
+      throw new Response(
+        `Agendamentos limitados a ${cfg.max_advance_days} dias.`,
+        { status: 422 },
+      );
+    }
+
+    const blockedDates: string[] = Array.isArray(cfg.blocked_dates) ? (cfg.blocked_dates as any) : [];
+    if (blockedDates.includes(data.date)) {
+      throw new Response("Data indisponível.", { status: 422 });
+    }
+
+    const weekly: Array<{ enabled: boolean; start: string; end: string }> = Array.isArray(cfg.weekly_hours)
+      ? (cfg.weekly_hours as any)
+      : [];
+    const weekday = dateOnly.getDay();
+    const dayCfg = weekly[weekday];
+    if (!dayCfg || !dayCfg.enabled) {
+      throw new Response("Dia fora do expediente.", { status: 422 });
+    }
+    const toMin = (t: string) => {
+      const [h, mn] = t.split(":").map(Number);
+      return h * 60 + mn;
+    };
+    const slotMin = hh * 60 + mm;
+    if (slotMin < toMin(dayCfg.start) || slotMin + (cfg.default_duration ?? 60) > toMin(dayCfg.end)) {
+      throw new Response("Horário fora do expediente.", { status: 422 });
+    }
+
+    const blockedSlots: Array<{ date: string; time: string }> = Array.isArray(cfg.blocked_slots)
+      ? (cfg.blocked_slots as any)
+      : [];
+    if (blockedSlots.some((b) => b.date === data.date && b.time === data.time)) {
+      throw new Response("Horário bloqueado.", { status: 422 });
+    }
+
+    // Daily limit
+    if (cfg.daily_limit && cfg.daily_limit > 0) {
+      const { count } = await supabaseAdmin
+        .from("appointments")
+        .select("id", { count: "exact", head: true })
+        .eq("date", data.date)
+        .neq("status", "Cancelado");
+      if ((count ?? 0) >= cfg.daily_limit) {
+        throw new Response("Limite diário de agendamentos atingido.", { status: 422 });
+      }
+    }
+
     const { data: existing, error: checkErr } = await supabaseAdmin
       .from("appointments")
       .select("id")

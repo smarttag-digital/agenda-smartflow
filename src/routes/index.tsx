@@ -353,9 +353,33 @@ function BookingPage() {
           </div>
         </div>
       </main>
+
+      <footer className="mt-16 border-t border-border/60 bg-background">
+        <div className="mx-auto flex max-w-5xl flex-col items-center gap-2 px-4 py-8 text-center sm:flex-row sm:justify-between sm:text-left">
+          <div>
+            <p className="font-display text-sm font-semibold text-foreground">Letícia Souza</p>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+              Corretora de Imóveis · CRECI 207663
+            </p>
+          </div>
+          <a
+            href="#"
+            aria-label="Instagram (em breve)"
+            className="inline-flex items-center gap-2 rounded-full border border-border px-3.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className="h-3.5 w-3.5">
+              <rect x="3" y="3" width="18" height="18" rx="5" />
+              <circle cx="12" cy="12" r="4" />
+              <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" />
+            </svg>
+            Instagram
+          </a>
+        </div>
+      </footer>
     </div>
   );
 }
+
 
 /* --- Subcomponents --- */
 

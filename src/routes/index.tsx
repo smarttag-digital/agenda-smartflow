@@ -149,7 +149,7 @@ function BookingPage() {
           <div className="space-y-5">
             <Card>
               <CardHeader index={1} title="Tipo de atendimento" />
-              <div className="grid grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
                 {TYPES.map(({ value, icon: Icon, hint }) => {
                   const active = type === value;
                   return (

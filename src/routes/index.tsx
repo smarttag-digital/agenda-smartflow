@@ -171,10 +171,11 @@ function BookingPage() {
                     >
                       <div className={cn(
                         "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors",
-                        active ? "bg-brand-gradient text-white" : "bg-muted text-foreground/70"
+                        active ? "bg-brand-gradient text-primary-foreground" : "bg-muted text-foreground/70"
                       )}>
                         <Icon className="h-4 w-4" />
                       </div>
+
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium">{value}</p>
                         <p className="mt-0.5 text-[11px] text-muted-foreground">{hint}</p>
@@ -243,11 +244,12 @@ function BookingPage() {
                           className={cn(
                             "relative rounded-xl border py-2.5 text-sm font-medium tabular-nums transition-all",
                             active
-                              ? "border-transparent bg-brand-gradient text-white shadow-glow"
+                              ? "border-transparent bg-brand-gradient text-primary-foreground shadow-glow"
                               : disabled
                                 ? "cursor-not-allowed border-dashed bg-muted/20 text-muted-foreground/50 line-through decoration-1"
                                 : "bg-card hover:-translate-y-0.5 hover:border-primary/40 hover:bg-accent/50"
                           )}
+
                         >
                           {t}
                           {taken && !active && (
@@ -335,7 +337,7 @@ function BookingPage() {
                 onClick={submit}
                 disabled={!canSubmit || loading}
                 size="lg"
-                className="mt-5 h-12 w-full rounded-xl bg-brand-gradient text-base font-semibold text-white shadow-glow transition-all hover:opacity-95 hover:shadow-lg disabled:opacity-40 disabled:shadow-none"
+                className="mt-5 h-12 w-full rounded-xl bg-foreground text-background text-base font-semibold shadow-soft transition-all hover:bg-foreground/90 disabled:opacity-40 disabled:shadow-none"
               >
                 {loading ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
@@ -343,9 +345,10 @@ function BookingPage() {
                   <>Confirmar agendamento <ArrowRight className="h-4 w-4" /></>
                 )}
               </Button>
-              <p className="mt-2.5 text-center text-[11px] text-muted-foreground">
-                Confirmação imediata · Sem cadastro
+              <p className="mt-3 text-center text-[11px] text-muted-foreground">
+                Atendimento personalizado · Confirmação imediata
               </p>
+
             </Card>
           </div>
         </div>

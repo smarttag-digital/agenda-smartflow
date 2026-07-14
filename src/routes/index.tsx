@@ -5,7 +5,7 @@ import { format, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   ArrowRight, Loader2, Mail, UserRound, CalendarDays, Phone,
-  FileText, Home, MapPin, Sparkles, Check, Clock,
+  FileText, Home, MapPin, Key, Tag, Check, Clock, Instagram,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -23,20 +23,19 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "SmartFlow Agenda — Agende seu atendimento" },
-      { name: "description", content: "Agende seu atendimento imobiliário em segundos. Escolha data, horário e confirme." },
-      { property: "og:title", content: "SmartFlow Agenda" },
-      { property: "og:description", content: "Agendamento imobiliário premium." },
+      { title: "Letícia Souza — Agende sua visita" },
+      { name: "description", content: "Agende sua visita imobiliária com a corretora Letícia Souza (CRECI 207663). Escolha data, horário e confirme." },
+      { property: "og:title", content: "Letícia Souza — Agende sua visita" },
+      { property: "og:description", content: "Agende sua visita imobiliária com a corretora Letícia Souza (CRECI 207663)." },
     ],
   }),
   component: BookingPage,
 });
 
 const TYPES: { value: AppointmentType; icon: any; hint: string }[] = [
-  { value: "Visita", icon: CalendarDays, hint: "Conhecer o imóvel" },
-  { value: "Compra", icon: Home, hint: "Encontrar o ideal" },
-  { value: "Venda", icon: Sparkles, hint: "Anunciar imóvel" },
-  { value: "Locação", icon: MapPin, hint: "Alugar imóvel" },
+  { value: "Compra", icon: Home, hint: "Conhecer o imóvel ideal" },
+  { value: "Locação", icon: Key, hint: "Alugar imóvel" },
+  { value: "Venda", icon: Tag, hint: "Captar imóvel" },
 ];
 
 function maskPhone(v: string) {
@@ -125,7 +124,7 @@ function BookingPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="pointer-events-none fixed inset-x-0 top-0 h-[420px] bg-[radial-gradient(60%_50%_at_50%_0%,oklch(0.7_0.18_280/.10),transparent_70%)]" />
+      <div className="pointer-events-none fixed inset-x-0 top-0 h-[420px] bg-[radial-gradient(60%_50%_at_50%_0%,oklch(0.7_0.08_80/.12),transparent_70%)]" />
       <Navbar />
 
       <main className="relative mx-auto max-w-6xl px-4 py-6 lg:py-10">
@@ -136,11 +135,8 @@ function BookingPage() {
           transition={{ duration: 0.35 }}
           className="mb-6 lg:mb-8"
         >
-          <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
-            Novo agendamento
-          </p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
-            Agende seu atendimento em <span className="text-brand-gradient">segundos</span>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            Agende sua <span className="text-brand-gradient">visita</span>
           </h1>
         </motion.div>
 
@@ -153,7 +149,7 @@ function BookingPage() {
           <div className="space-y-5">
             <Card>
               <CardHeader index={1} title="Tipo de atendimento" />
-              <div className="grid grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
                 {TYPES.map(({ value, icon: Icon, hint }) => {
                   const active = type === value;
                   return (
@@ -355,7 +351,7 @@ function BookingPage() {
       </main>
 
       <footer className="mt-16 border-t border-border/60 bg-background">
-        <div className="mx-auto flex max-w-5xl flex-col items-center gap-2 px-4 py-8 text-center sm:flex-row sm:justify-between sm:text-left">
+        <div className="mx-auto flex max-w-5xl flex-col items-center gap-3 px-4 py-8 text-center sm:flex-row sm:justify-between sm:text-left">
           <div>
             <p className="font-display text-sm font-semibold text-foreground">Letícia Souza</p>
             <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
@@ -363,16 +359,14 @@ function BookingPage() {
             </p>
           </div>
           <a
-            href="#"
-            aria-label="Instagram (em breve)"
+            href="https://www.instagram.com/leticiasouza.broker/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Instagram de Letícia Souza"
             className="inline-flex items-center gap-2 rounded-full border border-border px-3.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className="h-3.5 w-3.5">
-              <rect x="3" y="3" width="18" height="18" rx="5" />
-              <circle cx="12" cy="12" r="4" />
-              <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" />
-            </svg>
-            Instagram
+            <Instagram className="h-3.5 w-3.5" />
+            @leticiasouza.broker
           </a>
         </div>
       </footer>

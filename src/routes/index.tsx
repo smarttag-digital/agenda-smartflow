@@ -124,7 +124,7 @@ function BookingPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="pointer-events-none fixed inset-x-0 top-0 h-[420px] bg-[radial-gradient(60%_50%_at_50%_0%,oklch(0.7_0.18_280/.10),transparent_70%)]" />
+      <div className="pointer-events-none fixed inset-x-0 top-0 h-[420px] bg-[radial-gradient(60%_50%_at_50%_0%,oklch(0.7_0.08_80/.12),transparent_70%)]" />
       <Navbar />
 
       <main className="relative mx-auto max-w-6xl px-4 py-6 lg:py-10">

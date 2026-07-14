@@ -33,10 +33,9 @@ export const Route = createFileRoute("/")({
 });
 
 const TYPES: { value: AppointmentType; icon: any; hint: string }[] = [
-  { value: "Visita", icon: CalendarDays, hint: "Conhecer o imóvel" },
-  { value: "Compra", icon: Home, hint: "Encontrar o ideal" },
-  { value: "Venda", icon: Sparkles, hint: "Anunciar imóvel" },
-  { value: "Locação", icon: MapPin, hint: "Alugar imóvel" },
+  { value: "Compra", icon: Home, hint: "Conhecer o imóvel ideal" },
+  { value: "Locação", icon: Key, hint: "Alugar imóvel" },
+  { value: "Venda", icon: Tag, hint: "Captar imóvel" },
 ];
 
 function maskPhone(v: string) {

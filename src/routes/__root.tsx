@@ -74,8 +74,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "SmartFlow Agenda — Agendamento imobiliário premium" },
-      { name: "description", content: "Agende visitas, reuniões e captações imobiliárias com a SmartFlow Agenda." },
+      { title: "Letícia Souza — Corretora de Imóveis | Agendamento" },
+      { name: "description", content: "Agende sua visita imobiliária com a corretora Letícia Souza (CRECI 207663). Atendimento personalizado e confirmação imediata." },
+
       { name: "theme-color", content: "#1a1a1a" },
       { property: "og:title", content: "Letícia Souza — Agendamento" },
       { property: "og:description", content: "Agende sua visita imobiliária com a corretora Letícia Souza (CRECI 207663)." },

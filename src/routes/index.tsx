@@ -23,10 +23,10 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "SmartFlow Agenda — Agende seu atendimento" },
-      { name: "description", content: "Agende seu atendimento imobiliário em segundos. Escolha data, horário e confirme." },
-      { property: "og:title", content: "SmartFlow Agenda" },
-      { property: "og:description", content: "Agendamento imobiliário premium." },
+      { title: "Letícia Souza — Agende sua visita" },
+      { name: "description", content: "Agende sua visita imobiliária com a corretora Letícia Souza (CRECI 207663). Escolha data, horário e confirme." },
+      { property: "og:title", content: "Letícia Souza — Agende sua visita" },
+      { property: "og:description", content: "Agende sua visita imobiliária com a corretora Letícia Souza (CRECI 207663)." },
     ],
   }),
   component: BookingPage,

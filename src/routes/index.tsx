@@ -5,7 +5,7 @@ import { format, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   ArrowRight, Loader2, Mail, UserRound, CalendarDays, Phone,
-  FileText, Home, MapPin, Sparkles, Check, Clock,
+  FileText, Home, MapPin, Key, Tag, Check, Clock, Instagram,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";

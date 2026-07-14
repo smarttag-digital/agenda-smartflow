@@ -135,11 +135,8 @@ function BookingPage() {
           transition={{ duration: 0.35 }}
           className="mb-6 lg:mb-8"
         >
-          <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
-            Novo agendamento
-          </p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
-            Agende seu atendimento em <span className="text-brand-gradient">segundos</span>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            Agende sua <span className="text-brand-gradient">visita</span>
           </h1>
         </motion.div>
 

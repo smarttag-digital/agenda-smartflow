@@ -1,16 +1,14 @@
 import type { Appointment } from "./booking-store";
 import { getSettings } from "./settings-store";
-import { getAvailability } from "./availability-store";
 
 function fmt(d: Date) {
   return d.toISOString().replace(/[-:]|\.\d{3}/g, "");
 }
 
-export function googleCalendarUrl(a: Appointment): string {
+export function googleCalendarUrl(a: Appointment, durationMinutes: number = 60): string {
   const { eventTitle } = getSettings();
-  const duration = getAvailability().defaultDuration;
   const start = new Date(`${a.date}T${a.time}:00`);
-  const end = new Date(start.getTime() + duration * 60 * 1000);
+  const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
   const description = [
     `Cliente: ${a.name}`,
     `Telefone: ${a.phone}`,

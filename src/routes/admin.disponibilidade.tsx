@@ -1,13 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { Ban, Plus, Save, Trash2, Zap } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Ban, Loader2, Plus, Save, Trash2, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { useServerFn } from "@tanstack/react-start";
 import {
-  getAvailability, saveAvailability, type Availability,
+  DEFAULT_AVAILABILITY,
+  type Availability,
 } from "@/lib/availability-store";
+import { getAvailabilityFn, saveAvailabilityFn } from "@/lib/availability.functions";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/disponibilidade")({
@@ -17,26 +21,64 @@ export const Route = createFileRoute("/admin/disponibilidade")({
 const WEEKDAYS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
 function DisponibilidadePage() {
-  const [data, setData] = useState<Availability>(() => getAvailability());
+  const [data, setData] = useState<Availability>(DEFAULT_AVAILABILITY);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [newDate, setNewDate] = useState("");
   const [newSlot, setNewSlot] = useState({ date: "", time: "" });
+
+  const loadFn = useServerFn(getAvailabilityFn);
+  const saveFn = useServerFn(saveAvailabilityFn);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadFn()
+      .then((a) => { if (!cancelled) { setData(a); setLoading(false); } })
+      .catch((e) => { console.error(e); if (!cancelled) setLoading(false); toast.error("Não foi possível carregar as configurações"); });
+    const channel = supabase
+      .channel("availability_config_admin")
+      .on("postgres_changes", { event: "*", schema: "public", table: "availability_config" }, () => {
+        loadFn().then((a) => { if (!cancelled) setData(a); }).catch(() => {});
+      })
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(channel); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const update = <K extends keyof Availability>(key: K, value: Availability[K]) =>
     setData((d) => ({ ...d, [key]: value }));
 
-  const save = () => {
-    saveAvailability(data);
-    toast.success("Disponibilidade salva");
+  const persist = async (next: Availability) => {
+    setSaving(true);
+    try {
+      await saveFn({ data: next });
+      toast.success("Disponibilidade salva");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message ?? "Falha ao salvar");
+    } finally {
+      setSaving(false);
+    }
   };
+
+  const save = () => persist(data);
 
   const blockNow = () => {
     const d = new Date();
     const date = d.toISOString().slice(0, 10);
     const time = `${String(d.getHours()).padStart(2, "0")}:${String(Math.floor(d.getMinutes() / 30) * 30).padStart(2, "0")}`;
     const next = { ...data, blockedSlots: [...data.blockedSlots, { date, time }] };
-    setData(next); saveAvailability(next);
-    toast.success(`Bloqueado: ${date} ${time}`);
+    setData(next);
+    persist(next);
   };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center text-muted-foreground">
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Carregando disponibilidade…
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-4 sm:p-6">
@@ -44,14 +86,14 @@ function DisponibilidadePage() {
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">Disponibilidade</p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">Horários e regras</h1>
-          <p className="text-sm text-muted-foreground">Defina sua jornada, bloqueios e regras de agendamento.</p>
+          <p className="text-sm text-muted-foreground">Sincronizado com o link público em tempo real.</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={blockNow} variant="outline" className="rounded-full">
+          <Button onClick={blockNow} variant="outline" className="rounded-full" disabled={saving}>
             <Zap className="h-3.5 w-3.5" /> Bloquear agora
           </Button>
-          <Button onClick={save} className="rounded-full bg-brand-gradient text-white hover:opacity-95">
-            <Save className="h-3.5 w-3.5" /> Salvar
+          <Button onClick={save} className="rounded-full bg-brand-gradient text-white hover:opacity-95" disabled={saving}>
+            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />} Salvar
           </Button>
         </div>
       </header>

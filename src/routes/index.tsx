@@ -17,7 +17,9 @@ import { type AppointmentType } from "@/lib/booking-store";
 import { fetchSlotsForDate } from "@/hooks/use-appointments";
 import { useServerFn } from "@tanstack/react-start";
 import { createAppointmentFn } from "@/lib/appointments.functions";
-import { generateTimeSlots, getAvailability, getDayConfig, isBlockedSlot } from "@/lib/availability-store";
+import { getAvailabilityFn } from "@/lib/availability.functions";
+import { DEFAULT_AVAILABILITY, generateTimeSlots, getDayConfig, isBlockedSlot, type Availability } from "@/lib/availability-store";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
@@ -59,7 +61,25 @@ function BookingPage() {
 
   const today = startOfDay(new Date());
   const dateISO = date ? format(date, "yyyy-MM-dd") : "";
-  const maxDate = useMemo(() => new Date(Date.now() + getAvailability().maxAdvanceDays * 86400000), []);
+
+  const [availability, setAvailability] = useState<Availability>(DEFAULT_AVAILABILITY);
+  const loadAvailabilityFn = useServerFn(getAvailabilityFn);
+  useEffect(() => {
+    let cancelled = false;
+    const refresh = () => loadAvailabilityFn().then((a) => { if (!cancelled) setAvailability(a); }).catch(() => {});
+    refresh();
+    const channel = supabase
+      .channel("availability_config_public")
+      .on("postgres_changes", { event: "*", schema: "public", table: "availability_config" }, refresh)
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(channel); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const maxDate = useMemo(
+    () => new Date(Date.now() + availability.maxAdvanceDays * 86400000),
+    [availability.maxAdvanceDays],
+  );
 
   const [takenSlots, setTakenSlots] = useState<Set<string>>(new Set());
   const [loadingSlots, setLoadingSlots] = useState(false);
@@ -77,20 +97,19 @@ function BookingPage() {
 
   const availableTimes = useMemo(() => {
     if (!dateISO) return [];
-    const cfg = getDayConfig(dateISO);
+    const cfg = getDayConfig(availability, dateISO);
     if (!cfg) return [];
-    const a = getAvailability();
-    const slots = generateTimeSlots(cfg.start, cfg.end, a.interval);
+    const slots = generateTimeSlots(cfg.start, cfg.end, availability.interval);
     const now = new Date();
-    const noticeMs = a.minNoticeHours * 3600 * 1000;
+    const noticeMs = availability.minNoticeHours * 3600 * 1000;
     return slots.map((t) => {
       const slotDate = new Date(`${dateISO}T${t}:00`);
       const tooSoon = slotDate.getTime() - now.getTime() < noticeMs;
-      const blocked = isBlockedSlot(dateISO, t);
+      const blocked = isBlockedSlot(availability, dateISO, t);
       const taken = takenSlots.has(t);
       return { time: t, disabled: tooSoon || blocked || taken, taken };
     });
-  }, [dateISO, takenSlots]);
+  }, [dateISO, takenSlots, availability]);
 
   const phoneValid = phone.replace(/\D/g, "").length >= 10;
   const canSubmit = name.trim() && phoneValid && type && date && time;
@@ -197,7 +216,7 @@ function BookingPage() {
                   mode="single"
                   selected={date}
                   onSelect={(d) => { setDate(d); setTime(null); }}
-                  disabled={(d) => d < today || d > maxDate || !getDayConfig(format(d, "yyyy-MM-dd"))}
+                  disabled={(d) => d < today || d > maxDate || !getDayConfig(availability, format(d, "yyyy-MM-dd"))}
                   locale={ptBR}
                   className="pointer-events-auto"
                 />

@@ -17,7 +17,9 @@ import { type AppointmentType } from "@/lib/booking-store";
 import { fetchSlotsForDate } from "@/hooks/use-appointments";
 import { useServerFn } from "@tanstack/react-start";
 import { createAppointmentFn } from "@/lib/appointments.functions";
-import { generateTimeSlots, getAvailability, getDayConfig, isBlockedSlot } from "@/lib/availability-store";
+import { getAvailabilityFn } from "@/lib/availability.functions";
+import { DEFAULT_AVAILABILITY, generateTimeSlots, getDayConfig, isBlockedSlot, type Availability } from "@/lib/availability-store";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({

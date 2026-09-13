@@ -17,6 +17,7 @@ import { Route as AdminDisponibilidadeRouteImport } from './routes/admin.disponi
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin.configuracoes'
 import { Route as AdminAgendamentosRouteImport } from './routes/admin.agendamentos'
 import { Route as AdminAgendaRouteImport } from './routes/admin.agenda'
+import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
@@ -58,6 +59,11 @@ const AdminAgendaRoute = AdminAgendaRouteImport.update({
   path: '/agenda',
   getParentRoute: () => AdminRoute,
 } as any)
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -68,6 +74,7 @@ export interface FileRoutesByFullPath {
   '/admin/disponibilidade': typeof AdminDisponibilidadeRoute
   '/sucesso/$id': typeof SucessoIdRoute
   '/admin/': typeof AdminIndexRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -77,6 +84,7 @@ export interface FileRoutesByTo {
   '/admin/disponibilidade': typeof AdminDisponibilidadeRoute
   '/sucesso/$id': typeof SucessoIdRoute
   '/admin': typeof AdminIndexRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -88,6 +96,7 @@ export interface FileRoutesById {
   '/admin/disponibilidade': typeof AdminDisponibilidadeRoute
   '/sucesso/$id': typeof SucessoIdRoute
   '/admin/': typeof AdminIndexRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -100,6 +109,7 @@ export interface FileRouteTypes {
     | '/admin/disponibilidade'
     | '/sucesso/$id'
     | '/admin/'
+    | '/.lovable/oauth/consent'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/admin/disponibilidade'
     | '/sucesso/$id'
     | '/admin'
+    | '/.lovable/oauth/consent'
   id:
     | '__root__'
     | '/'
@@ -119,12 +130,14 @@ export interface FileRouteTypes {
     | '/admin/disponibilidade'
     | '/sucesso/$id'
     | '/admin/'
+    | '/.lovable/oauth/consent'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   SucessoIdRoute: typeof SucessoIdRoute
+  DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -185,6 +198,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAgendaRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/.lovable/oauth/consent': {
+      id: '/.lovable/oauth/consent'
+      path: '/.lovable/oauth/consent'
+      fullPath: '/.lovable/oauth/consent'
+      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -210,6 +230,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   SucessoIdRoute: SucessoIdRoute,
+  DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

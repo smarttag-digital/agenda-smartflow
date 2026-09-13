@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "sdk_version": "2.0.4",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://eahzdmdoteflrrwcdzai.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "agenda-smartflow",
+      "version": "0.1.0",
+      "title": "Agenda SmartFlow"
+    },
+    "tools": [
+      {
+        "name": "list_appointments",
+        "title": "Listar agendamentos",
+        "description": "Lista os agendamentos da corretora, com filtros opcionais por intervalo de datas e por status (Novo, Confirmado, Realizado, Cancelado).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "from": {
+              "description": "Data inicial (AAAA-MM-DD).",
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "to": {
+              "description": "Data final (AAAA-MM-DD).",
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "status": {
+              "description": "Filtrar por status.",
+              "type": "string",
+              "enum": [
+                "Novo",
+                "Confirmado",
+                "Realizado",
+                "Cancelado"
+              ]
+            },
+            "limit": {
+              "default": 25,
+              "description": "Máximo de resultados.",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_appointment_status",
+        "title": "Atualizar status do agendamento",
+        "description": "Altera o status de um agendamento existente (Novo, Confirmado, Realizado ou Cancelado).",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "ID do agendamento."
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "Novo",
+                "Confirmado",
+                "Realizado",
+                "Cancelado"
+              ],
+              "description": "Novo status do agendamento."
+            }
+          },
+          "required": [
+            "id",
+            "status"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_availability",
+        "title": "Ver disponibilidade",
+        "description": "Retorna as regras de disponibilidade da agenda: horários semanais, duração, intervalo, limite diário, antecedência, datas e horários bloqueados.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
